@@ -58,8 +58,6 @@ class NoTaskbarParent
 
 
 //////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
 
 // vds: >>
 std::wstring GetDir(std::wstring path)
@@ -84,9 +82,6 @@ std::wstring GetDir(std::wstring path)
 }
 // vds: <<
 
-
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
 
@@ -167,7 +162,7 @@ void ParseCommandLine
 			iFlags |= CLF_FORCE_NEW_INSTANCE;
 		}
 		// TODO: not working yet, need to investigate
-/*
+#if 0
 		else if (wstring(argv[i]) == wstring(L"-dbg"))
 		{
 			// console window replacement option (see Tip 1 in the help file)
@@ -175,7 +170,7 @@ void ParseCommandLine
 			if (i == argc) break;
 			strDbgCmdLine = argv[i];
 		}
-*/
+#endif
 	}
 
 	// make sure that startupDirs and startupCmds are at least as big as startupTabs
@@ -187,8 +182,84 @@ void ParseCommandLine
 
 
 //////////////////////////////////////////////////////////////////////////////
+#ifdef USE_COPYDATA_MSG
 bool SendCreateNewTabsToAnotherInstance( vector<wstring> &startupTabs, vector<wstring> &startupDirs, vector<wstring> &startupCmds, HWND hPrevConsole );
+#endif
 //////////////////////////////////////////////////////////////////////////
+
+// vds: >>
+wstring BuildCommandLine(
+	wstring strConfigFile, 
+	wstring strWindowTitle, 
+	vector<wstring>& startupTabs, 
+	vector<wstring>& startupDirs, 
+	vector<wstring>& startupCmds, 
+	int nMultiStartSleep, 
+	wstring strDbgCmdLine
+)
+{
+	wstring ret;
+
+	if (strConfigFile != _T("")) {
+		ret += _T(" -c ") + strConfigFile;
+	}
+	if (strWindowTitle != _T("")) {
+		ret += _T(" -w ") + strWindowTitle;
+	}
+
+	if (startupTabs.size() == 0) {
+		TabSettings& tabSettings = g_settingsHandler->GetTabSettings();
+		wstring title = tabSettings.tabDataVector[0]->strTitle;
+
+		startupTabs.push_back(title);
+	}
+	if (startupDirs.size() < startupTabs.size()) startupDirs.resize(startupTabs.size());
+	if (startupCmds.size() < startupTabs.size()) startupCmds.resize(startupTabs.size());
+
+	TCHAR workingDirectory[_MAX_PATH + 1];
+	GetCurrentDirectory(_MAX_PATH, workingDirectory);
+
+	for (unsigned int i = 0; i < startupDirs.size(); ++i) {
+		if (startupDirs[i] != _T(""))
+			continue;
+
+		startupDirs[i] = wstring(workingDirectory);
+	}
+
+	for (unsigned int i = 0; i < startupTabs.size(); ++i) {
+		wstring tab = startupTabs[i];
+		wstring dir = startupDirs[i];
+		wstring cmd = startupCmds[i];
+
+		ret += _T(" -t \"") + tab + _T("\"");
+		ret += _T(" -d \"") + dir + _T("\"");
+		ret += _T(" -r \"") + cmd + _T("\"");
+	}
+	for (unsigned int i = startupTabs.size(); i < startupDirs.size(); ++i) {
+		wstring dir = startupDirs[i];
+
+		ret += _T(" -d \"") + dir + _T("\"");
+	}
+	for (unsigned int i = startupTabs.size(); i < startupCmds.size(); ++i) {
+		wstring cmd = startupCmds[i];
+
+		ret += _T(" -r \"") + cmd + _T("\"");
+	}
+
+	if (nMultiStartSleep != 0) {
+		TCHAR szMultiStartSleep[256];
+		_sntprintf_s(szMultiStartSleep, 256, sizeof(szMultiStartSleep) / sizeof(TCHAR), _T(" -ts %d"), nMultiStartSleep);
+		ret += szMultiStartSleep;
+	}
+
+	return ret;
+}
+// vds: <<
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
 
 int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 {
@@ -221,6 +292,7 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 		strDbgCmdLine,
 		iFlags);
 
+#ifdef USE_COPYDATA_MSG		///> use WM_COPYDATA message to communicate with running instance
 	// reuse running instance
 	if(iFlags&CLF_TRY_2REUSE_PREV_INSTANCE)
 	{
@@ -241,6 +313,7 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 				return 0;	///< success, otherwise start as usual
 		}
 	}
+#endif
 
 	if (strConfigFile.length() == 0)
 	{
@@ -255,7 +328,7 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 		return -1;
 	}
 	// vds: >>
-	if (g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bAllowMultipleInstances || (iFlags&CLF_FORCE_NEW_INSTANCE))
+	if ((g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bAllowMultipleInstances && (!(iFlags&CLF_TRY_2REUSE_PREV_INSTANCE))) || (iFlags&CLF_FORCE_NEW_INSTANCE))
 		bOneInstance = false;
 	// vds: <<
 
@@ -276,13 +349,23 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 	}
 
 	// vds: >>
+	wstring rebuildCommandLine;
 	if (!bOneInstance) {
 		wndMain.ShowWindow(nCmdShow);
 	}
 	else {
 		// Give 3 seconds to exchange the DDE messages.
 		wndMain.SetTimer(TIMER_TIMEOUT, 3000, NULL);
-		::PostMessage(wndMain.m_hWnd, WM_SEND_DDE_COMMAND, 0, reinterpret_cast<LPARAM>(lpstrCmdLine));
+		rebuildCommandLine = BuildCommandLine(
+			strConfigFile, 
+			strWindowTitle, 
+			startupTabs, 
+			startupDirs, 
+			startupCmds, 
+			nMultiStartSleep, 
+			strDbgCmdLine);
+
+		::PostMessage(wndMain.m_hWnd, WM_SEND_DDE_COMMAND, 0, reinterpret_cast<LPARAM>(rebuildCommandLine.c_str()));
 	}
 	// vds: <<
 	int nRet = theLoop.Run();
@@ -338,7 +421,7 @@ int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lp
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
-
+#ifdef USE_COPYDATA_MSG
 bool SendCreateNewTabsToAnotherInstance( vector<wstring> &startupTabs, vector<wstring> &startupDirs, vector<wstring> &startupCmds, HWND hPrevConsole )
 {
 	// walk through tabs
@@ -393,3 +476,4 @@ bool SendCreateNewTabsToAnotherInstance( vector<wstring> &startupTabs, vector<ws
 	// success
 	return true;
 }
+#endif

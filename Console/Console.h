@@ -23,4 +23,14 @@ void ParseCommandLine(
 	wstring& strDbgCmdLine,
 	WORD& iFlags
 );
+
+wstring BuildCommandLine(
+	wstring strConfigFile, 
+	wstring strWindowTitle, 
+	vector<wstring>& startupTabs, 
+	vector<wstring>& startupDirs, 
+	vector<wstring>& startupCmds, 
+	int nMultiStartSleep, 
+	wstring strDbgCmdLine
+);
 // vds: <<

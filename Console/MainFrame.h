@@ -81,7 +81,9 @@ class MainFrame
 			MESSAGE_HANDLER(WM_EXITSIZEMOVE, OnExitSizeMove)
 			MESSAGE_HANDLER(WM_TIMER, OnTimer)
 			MESSAGE_HANDLER(WM_SETTINGCHANGE, OnSettingChange)
+#ifdef USE_COPYDATA_MSG
 			MESSAGE_HANDLER(WM_COPYDATA, OnCopyData)
+#endif
 			MESSAGE_HANDLER(UM_CONSOLE_RESIZED, OnConsoleResized)
 			MESSAGE_HANDLER(UM_CONSOLE_CLOSED, OnConsoleClosed)
 			MESSAGE_HANDLER(UM_UPDATE_TITLES, OnUpdateTitles)
@@ -151,9 +153,9 @@ class MainFrame
 		LRESULT OnTimer(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 
 		LRESULT OnSettingChange(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/);
-
+#ifdef USE_COPYDATA_MSG
 		LRESULT OnCopyData(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/);
-
+#endif
 		LRESULT OnConsoleResized(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /* bHandled */);
 		LRESULT OnConsoleClosed(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 		LRESULT OnUpdateTitles(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/);
