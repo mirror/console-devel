@@ -1135,7 +1135,7 @@ void OneInstanceSettings::IntegrateConsoleWithExplorer(bool integrate)
 	GetModuleFileName(0, module, sizeof(module) / sizeof(TCHAR) - 1);
 
 	TCHAR line[512];
-	_sntprintf(line, sizeof(line) / sizeof(TCHAR) - 1, _T("%s -d \"%%1\""), module);
+	_sntprintf_s(line, 512, sizeof(line) / sizeof(TCHAR) - 1, _T("%s -d \"%%1\""), module);
 
 	if (integrate) {
 		SetKeyValue(_T("*\\shell\\console"), _T("&Console"));

@@ -37,6 +37,7 @@
 		<scroll page_scroll_rows="0"/>
 		<tab_highlight flashes="3" stay_highligted="1" />
 		<animate type="0" horz_direction="1" vert_direction="0" time="200" />
+		<one_instance allow_multiple_intances="1" reuse_tab="0" reuse_busy_tab="0" />
 	</behavior>
 	<hotkeys use_scroll_lock="0">
 		<hotkey ctrl="0" shift="0" alt="0" extended="0" code="112" command="help"/>

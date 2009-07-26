@@ -73,6 +73,7 @@ LRESULT DlgSettingsBehavior::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPAR
 
 	EnableScrollControls();
 	EnableFlashTabControls();
+	EnableOnInstanceControls();
 
 	return TRUE;
 }

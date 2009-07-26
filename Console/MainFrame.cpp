@@ -849,7 +849,7 @@ LRESULT MainFrame::OnSettingChange(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, 
 
 
 //////////////////////////////////////////////////////////////////////////////
-
+#ifdef USE_COPYDATA_MSG
 LRESULT MainFrame::OnCopyData(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
 {
 //	MessageBox(L"WM_COPYDATA received",L"Info",MB_OK|MB_ICONINFORMATION);
@@ -903,7 +903,7 @@ LRESULT MainFrame::OnCopyData(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, B
 	}
 	return 1;
 }
-
+#endif
 //////////////////////////////////////////////////////////////////////////////
 
 
@@ -2767,13 +2767,14 @@ LRESULT MainFrame::OnDdeExecute(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOO
 			TCHAR *lpstrCmdLine = message + _tcslen(_T("Open[("));
 			lpstrCmdLine[_tcslen(lpstrCmdLine) - _tcslen(_T(")]"))] = '\0';
 
+#if 0
+			TCHAR buf[4096];
+			_sntprintf_s(buf, 256, _T("OnDdeExecute %s"), lpstrCmdLine);
+			MessageBox(buf, _T("Received Message"), MB_OK);
+#endif
+
 			if (g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bAllowMultipleInstances)
 			{
-#if 0
-				TCHAR buf[1024];
-				_sntprintf_s(buf, 256, _T("OnDdeExecute %s"), lpstrCmdLine);
-				MessageBox(buf, _T("Received Message"), MB_OK);
-#endif
 				// If you allow multiple instance don't let explorer reuse an existing one.
 				TCHAR module[512];
 				GetModuleFileName(0, module, sizeof(module) / sizeof(TCHAR) - 1);
@@ -2864,6 +2865,8 @@ LRESULT MainFrame::OnDdeExecute(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOO
 				placement.flags = WPF_ASYNCWINDOWPLACEMENT;
 				placement.showCmd = SW_RESTORE;
 				SetWindowPlacement(&placement);
+
+				SetFocus();
 			}
 			GlobalUnlock(hData);
 		}
