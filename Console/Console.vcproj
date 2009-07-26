@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1250"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="9,00"
 	Name="Console"
 	ProjectGUID="{6EA5C354-A242-49F3-88D1-559EACA7FB8A}"
 	RootNamespace="Console"
@@ -21,6 +21,7 @@
 			IntermediateDirectory="..\obj\Console\Debug"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			UseOfATL="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="1"
 			>
@@ -52,6 +53,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Zm200"
 				Optimization="0"
+				AdditionalIncludeDirectories="D:\Work\Gray\Projects\Global\contrib\wtl\include;D:\Work\Gray\InterestingProjects\Console2\contrib;D:\Work\Gray\Projects\Global\contrib\boost\"
 				PreprocessorDefinitions="WIN32;_WINDOWS;STRICT;_DEBUG"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
@@ -68,7 +70,7 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG"
 				Culture="1033"
-				AdditionalIncludeDirectories="$(IntDir)"
+				AdditionalIncludeDirectories="$(IntDir);D:\Work\Gray\Projects\Global\contrib\wtl\include\"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -112,6 +114,7 @@
 			IntermediateDirectory="..\obj\Console\Release"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			UseOfATL="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="1"
 			>
@@ -142,6 +145,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Zm200"
+				AdditionalIncludeDirectories="D:\Work\Gray\Projects\Global\contrib\wtl\include;D:\Work\Gray\Interesting projects\Console2\contrib\;D:\Work\Gray\Projects\Global\contrib\boost\"
 				PreprocessorDefinitions="WIN32;_WINDOWS;STRICT;NDEBUG"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
@@ -157,7 +161,7 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG"
 				Culture="1033"
-				AdditionalIncludeDirectories="$(IntDir)"
+				AdditionalIncludeDirectories="$(IntDir);D:\Work\Gray\Projects\Global\contrib\wtl\include\"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -272,6 +276,10 @@
 			</File>
 			<File
 				RelativePath=".\MainFrame.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\NTProcessInfo.cpp"
 				>
 			</File>
 			<File
@@ -401,6 +409,10 @@
 			</File>
 			<File
 				RelativePath=".\MainFrame.h"
+				>
+			</File>
+			<File
+				RelativePath=".\NTProcessInfo.h"
 				>
 			</File>
 			<File

@@ -1,0 +1,26 @@
+HKCR
+{
+	Console2.ContextMenuHandler.1 = s 'ContextMenuHandler Class'
+	{
+		CLSID = s '{88076FF3-A8B5-4059-AB7D-9D7DEF3792FD}'
+	}
+	Console2.ContextMenuHandler = s 'ContextMenuHandler Class'
+	{
+		CLSID = s '{88076FF3-A8B5-4059-AB7D-9D7DEF3792FD}'
+		CurVer = s 'Console2.ContextMenuHandler.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {88076FF3-A8B5-4059-AB7D-9D7DEF3792FD} = s 'ContextMenuHandler Class'
+		{
+			ProgID = s 'Console2.ContextMenuHandler.1'
+			VersionIndependentProgID = s 'Console2.ContextMenuHandler'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+			'TypeLib' = s '{2AC61119-8D7D-43DA-BD9E-9310BFF8977F}'
+		}
+	}
+}

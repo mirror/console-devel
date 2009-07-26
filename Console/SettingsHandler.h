@@ -372,6 +372,30 @@ struct AnimateSettings : public SettingsBase
 
 //////////////////////////////////////////////////////////////////////////////
 
+// vds: >>
+struct OneInstanceSettings : public SettingsBase
+{
+	OneInstanceSettings();
+
+	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+
+	OneInstanceSettings& operator=(const OneInstanceSettings& other);
+
+	bool IsConsoleIntegratedWithExplorer();
+	void IntegrateConsoleWithExplorer(bool integrate);
+
+	bool	bAllowMultipleInstances;
+	bool	bReuseTab;
+	bool	bReuseBusyTab;
+};
+// vds: <<
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+
 struct BehaviorSettings : public SettingsBase
 {
 	BehaviorSettings ();
@@ -385,6 +409,7 @@ struct BehaviorSettings : public SettingsBase
 	ScrollSettings			scrollSettings;
 	TabHighlightSettings	tabHighlightSettings;
 //	AnimateSettings			animateSettings;
+	OneInstanceSettings		oneInstanceSettings; // vds:
 };
 
 //////////////////////////////////////////////////////////////////////////////

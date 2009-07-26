@@ -25,6 +25,7 @@ MainFrame::MainFrame
 	const vector<wstring>& startupDirs, 
 	const vector<wstring>& startupCmds, 
 	int nMultiStartSleep, 
+	bool bOneInstance, // vds:
 	const wstring& strDbgCmdLine
 )
 : m_bOnCreateDone(false)
@@ -32,6 +33,7 @@ MainFrame::MainFrame
 , m_startupDirs(startupDirs)
 , m_startupCmds(startupCmds)
 , m_nMultiStartSleep(nMultiStartSleep)
+, m_bOneInstance(bOneInstance) // vds:
 , m_strDbgCmdLine(strDbgCmdLine)
 , m_activeView()
 , m_bMenuVisible(TRUE)
@@ -53,6 +55,11 @@ MainFrame::MainFrame
 , m_bRestoringWindow(false)
 , m_rectRestoredWnd(0, 0, 0, 0)
 , m_animationWindow()
+// vds: >>
+, m_refuseDdeExecuteMessage(false)
+, m_currentDdeMsg(0)
+, m_hDdeServerWnd(0)
+// vds: <<
 {
 
 }
@@ -85,6 +92,11 @@ BOOL MainFrame::PreTranslateMessage(MSG* pMsg)
 
 BOOL MainFrame::OnIdle()
 {
+	// vds: >>
+	if (m_bOneInstance)
+		return FALSE;
+	// vds: <<
+
 	UpdateStatusBar();
 	UIUpdateToolBar();
 	return FALSE;
@@ -97,6 +109,11 @@ BOOL MainFrame::OnIdle()
 
 LRESULT MainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 {
+	// vds: >>
+	if (m_bOneInstance)
+		return 0;
+	// vds: <<
+
 	// create command bar window
 	HWND hWndCmdBar = m_CmdBar.Create(m_hWnd, rcDefault, NULL, ATL_SIMPLE_CMDBAR_PANE_STYLE);
 	// attach menu
@@ -236,7 +253,7 @@ LRESULT MainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
 	RegisterGlobalHotkeys();
 
 	SetTransparency();
-	if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon) SetTrayIcon(NIM_ADD);
+	if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon /*&& !m_bOneInstance*/) SetTrayIcon(NIM_ADD); // vds:
 
 	AdjustWindowSize(false);
 
@@ -278,6 +295,11 @@ LRESULT MainFrame::OnEraseBkgnd(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lPara
 
 LRESULT MainFrame::OnClose(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 {
+	// vds: >>
+	if (m_bOneInstance)
+		return 0;
+	// vds: <<
+
 	// save settings on exit
 	bool				bSaveSettings		= false;
 	ConsoleSettings&	consoleSettings		= g_settingsHandler->GetConsoleSettings();
@@ -314,7 +336,7 @@ LRESULT MainFrame::OnClose(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, 
 		it->second->DestroyWindow();
 	}
 
-	if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon) SetTrayIcon(NIM_DELETE);
+	if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon /*&& !m_bOneInstance*/) SetTrayIcon(NIM_DELETE); // vds:
 
 	UnregisterGlobalHotkeys();
 
@@ -329,6 +351,8 @@ LRESULT MainFrame::OnClose(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, 
 
 LRESULT MainFrame::OnActivateApp(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled)
 {
+	m_refuseDdeExecuteMessage = true; // vds:
+
 	BOOL bActivating = static_cast<BOOL>(wParam);
 
 	if (m_activeView.get() == NULL) return 0;
@@ -358,9 +382,10 @@ LRESULT MainFrame::OnActivateApp(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/
 		return 0;
 	}
 
+#if 0
 //	if (g_settingsHandler->GetBehaviorSettings().animateSettings.dwType != animTypeNone)
 //	{
-/*
+
 		DWORD	dwFlags = (g_settingsHandler->GetBehaviorSettings().animateSettings.dwType == animTypeBlend) ? AW_BLEND : AW_SLIDE;
 
 		switch (g_settingsHandler->GetBehaviorSettings().animateSettings.dwType)
@@ -391,8 +416,7 @@ LRESULT MainFrame::OnActivateApp(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/
 		if (!bActivating) dwFlags |= AW_HIDE;
 
 		::AnimateWindow(m_hWnd, g_settingsHandler->GetBehaviorSettings().animateSettings.dwTime, dwFlags);
-*/
-/*
+
 		if (bActivating)
 		{
 			TRACE(L"Activating\n");
@@ -408,10 +432,13 @@ LRESULT MainFrame::OnActivateApp(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/
 			m_animationWindow->Create();
 			m_animationWindow->SA();
 		}
-*/
+
 
 //		if (bActivating) ::RedrawWindow(m_hWnd, NULL, NULL, RDW_ERASE|RDW_INVALIDATE|RDW_ERASENOW|RDW_UPDATENOW|RDW_ALLCHILDREN);
 //	}
+#endif
+
+	m_refuseDdeExecuteMessage = false; // vds:
 
 	bHandled = FALSE;
 	return 0;
@@ -455,7 +482,7 @@ LRESULT MainFrame::OnHotKey(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOO
 
 //////////////////////////////////////////////////////////////////////////////
 
-LRESULT MainFrame::OnSysKeydown(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+LRESULT MainFrame::OnSysKeydown(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 {
 /*
 	if ((wParam == VK_SPACE) && (lParam & (0x1 << 29)))
@@ -531,8 +558,13 @@ LRESULT MainFrame::OnGetMinMaxInfo(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lPar
 
 //////////////////////////////////////////////////////////////////////////////
 
-LRESULT MainFrame::OnSize(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+LRESULT MainFrame::OnSize(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled)
 {
+	// vds: >>
+	if (m_bOneInstance)
+		return 0;
+	// vds: <<
+
 	// Start timer that will force a call to ResizeWindow (called from WM_EXITSIZEMOVE handler
 	// when the Console window is resized using a mouse)
 	// External utilities that might resize Console window usually don't send WM_EXITSIZEMOVE
@@ -751,7 +783,7 @@ LRESULT MainFrame::OnMouseMove(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, 
 
 //////////////////////////////////////////////////////////////////////////////
 
-LRESULT MainFrame::OnExitSizeMove(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+LRESULT MainFrame::OnExitSizeMove(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 {
 	ResizeWindow();
 	return 0;
@@ -769,6 +801,13 @@ LRESULT MainFrame::OnTimer(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL
 		KillTimer(TIMER_SIZING);
 		ResizeWindow();
 	}
+	// vds: >>
+	else if (wParam == TIMER_TIMEOUT)
+	{
+		::PostMessage(m_hDdeServerWnd, WM_DDE_TERMINATE, reinterpret_cast<WPARAM>(m_hWnd), 0);
+		DestroyWindow();
+	}
+	// vds: <<
 
 	return 0;
 }
@@ -778,16 +817,25 @@ LRESULT MainFrame::OnTimer(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL
 
 //////////////////////////////////////////////////////////////////////////////
 
-LRESULT MainFrame::OnSettingChange(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
+LRESULT MainFrame::OnSettingChange(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
 {
 	if (lParam == 0) return 0;
 
 	wstring strArea(reinterpret_cast<wchar_t*>(lParam));
 
-	if (strArea == L"Windows")
+	if(wParam == SPI_SETDESKWALLPAPER)
 	{
 		g_imageHandler->ReloadDesktopImages();
-		m_activeView->Invalidate();
+//		m_activeView->Invalidate();
+		if (m_activeView.get() != NULL)
+			m_activeView->Repaint(TRUE);
+	}
+	else if (strArea == L"Windows")
+	{
+		g_imageHandler->ReloadDesktopImages();
+//		m_activeView->Invalidate();
+		if (m_activeView.get() != NULL)
+			m_activeView->Repaint(TRUE);
 	}
 	else if (strArea == L"Environment")
 	{
@@ -795,6 +843,65 @@ LRESULT MainFrame::OnSettingChange(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lPar
 	}
 
 	return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+LRESULT MainFrame::OnCopyData(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
+{
+//	MessageBox(L"WM_COPYDATA received",L"Info",MB_OK|MB_ICONINFORMATION);
+	COPYDATASTRUCT	*pCD = (COPYDATASTRUCT*)lParam;
+	if(!pCD) return 0;
+	// analyze command
+	switch(pCD->dwData){
+	case eEC_NewTab:///< create new tab
+		{
+			// check
+			if(pCD->cbData<sizeof(ECNewTabParams)) return 0;
+			ECNewTabParams	*pPrm = (ECNewTabParams*)pCD->lpData;
+			if((sizeof(ECNewTabParams)+pPrm->nTabNameSize+pPrm->nStartDirSize+pPrm->nStartCmdSize)>pCD->cbData) return 0;
+/* DEBUG
+			wchar_t	tbuf[2048];
+			swprintf_s(tbuf,2046,L"tab: \"%s\"\ndir: \"%s\"\ncmd: \"%s\"",pPrm->szTabName,&pPrm->szTabName[pPrm->nTabNameSize],&pPrm->szTabName[pPrm->nTabNameSize+pPrm->nStartDirSize]);
+			MessageBox(tbuf,L"New Tab",MB_OK|MB_ICONINFORMATION);
+*/
+			// add new tab
+			TabSettings&	tabSettings = g_settingsHandler->GetTabSettings();
+			// find tab with corresponding name...
+			for (size_t i = 0; i < tabSettings.tabDataVector.size(); ++i)
+			{
+				wstring str = tabSettings.tabDataVector[i]->strTitle;
+				wstring	sNewTab(pPrm->szTabName);
+				if (tabSettings.tabDataVector[i]->strTitle == sNewTab)
+				{
+					// found it, create
+					if (!CreateNewConsole(
+						static_cast<DWORD>(i), 
+						wstring(&pPrm->szTabName[pPrm->nTabNameSize]),
+						wstring(&pPrm->szTabName[pPrm->nTabNameSize+pPrm->nStartDirSize]),
+						wstring(L"")))
+					{
+						return 0;
+					}
+					break;
+				}
+			}
+			// bring window to front - not necessary
+			::ShowWindow(m_hWnd,SW_SHOWNORMAL);
+			::SetForegroundWindow(m_hWnd);
+			::SetActiveWindow(m_hWnd);
+//			::SetFocus(m_hWnd);
+//			::ShowWindow(m_hWnd,SW_RESTORE);
+//			::SendMessage(m_hWnd,WM_ACTIVATE,WA_ACTIVE,NULL);
+		}
+		break;
+	default:///< unknown command
+		return 0;
+	}
+	return 1;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -856,7 +963,7 @@ LRESULT MainFrame::OnUpdateTitles(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*
 		{
 			m_strWindowTitle = consoleView->GetTitle();
 			SetWindowText(m_strWindowTitle);
-			if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon) SetTrayIcon(NIM_MODIFY);
+			if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon /*&& !m_bOneInstance*/) SetTrayIcon(NIM_MODIFY); // vds:
 		}
 	}
 	else
@@ -883,7 +990,7 @@ LRESULT MainFrame::OnUpdateTitles(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*
 			if (windowSettings.bShowCommand)	m_strWindowTitle += strCommandText;
 
 			SetWindowText(m_strWindowTitle);
-			if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon) SetTrayIcon(NIM_MODIFY);
+			if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon /*&& !m_bOneInstance*/) SetTrayIcon(NIM_MODIFY); // vds:
 		}
 		
 		if (windowSettings.bShowCommandInTabs) strTabTitle += strCommandText;
@@ -1044,7 +1151,7 @@ LRESULT MainFrame::OnTabChanged(int /*idCtrl*/, LPNMHDR pnmh, BOOL& bHandled)
 		}
 	}
 
-	if (appearanceSettings.stylesSettings.bTrayIcon) SetTrayIcon(NIM_MODIFY);
+	if (appearanceSettings.stylesSettings.bTrayIcon /*&& !m_bOneInstance*/) SetTrayIcon(NIM_MODIFY); // vds:
 	
 	if (appearanceSettings.windowSettings.bUseTabTitles && (m_activeView.get() != NULL))
 	{
@@ -1337,7 +1444,7 @@ LRESULT MainFrame::OnEditSettings(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWn
 		SetTransparency();
 
 		// tray icon
-		if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon)
+		if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon /*&& !m_bOneInstance*/) // vds:
 		{
 			SetTrayIcon(NIM_ADD);
 		}
@@ -2074,6 +2181,11 @@ void MainFrame::ResizeWindow()
 	{
 		AdjustWindowSize(true, false);
 	}
+	else
+	{// if window was not resized may be it has been moved, so update background image for active view
+		if (m_activeView.get() != NULL)
+			m_activeView->Repaint(TRUE);
+	}
 
 	SendMessage(WM_NULL, 0, 0);
 	m_dwResizeWindowEdge = WMSZ_BOTTOM;
@@ -2419,3 +2531,387 @@ BOOL MainFrame::SetTrayIcon(DWORD dwMessage) {
 
 /////////////////////////////////////////////////////////////////////////////
 
+// vds: >>
+const TCHAR *DdeApplicationName = _T("Console");
+
+LRESULT MainFrame::OnSendDdeCommand(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
+{
+	LPTSTR lpstrCmdLine = reinterpret_cast<LPTSTR>(lParam);
+	SendDdeExecuteCommand(lpstrCmdLine);
+
+	return 0L;
+}
+
+bool MainFrame::SendDdeExecuteCommand(LPTSTR lpstrCmdLine)
+{
+	m_hDdeServerWnd = NULL;
+
+	ATOM applicationAtom = GlobalAddAtom(_T("Console"));
+	ATOM topicAtom = GlobalAddAtom(_T("System"));
+
+	LPARAM lParam = MAKELPARAM(applicationAtom, topicAtom);
+
+	m_currentDdeMsg = WM_DDE_INITIATE;
+	::SendMessage(HWND_BROADCAST, WM_DDE_INITIATE, reinterpret_cast<WPARAM>(m_hWnd), lParam); 
+    
+	GlobalDeleteAtom(applicationAtom); 
+    GlobalDeleteAtom(topicAtom);
+
+	TCHAR lpstrDdeCmd[1024];
+	_sntprintf_s(lpstrDdeCmd, 1024, _T("Open[(%s)]"), lpstrCmdLine);
+
+#if 0
+	TCHAR buf[256];
+	_sntprintf_s(buf, 256, _T("Execute Command: %s"), lpstrDdeCmd);
+	MessageBox(buf, _T("Sent Message:"), MB_OK);
+#endif
+
+	if (m_hDdeServerWnd) {
+		bool unicodeMessage = IsWindowUnicode() && ::IsWindowUnicode(m_hDdeServerWnd);
+
+		size_t hCommandSize = (_tcslen(lpstrDdeCmd) + 1) * sizeof(TCHAR);
+		HGLOBAL hCommand = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE, hCommandSize);
+		if (!hCommand)
+			return false;
+
+		TCHAR *lpCommand = static_cast<TCHAR*>(GlobalLock(hCommand));
+
+		if (!lpCommand) { 
+			GlobalFree(hCommand); 
+			return false; 
+		} 
+
+		//_tcscpy_s(lpCommand, hCommandSize, lpstrDdeCmd);
+		memcpy(lpCommand, lpstrDdeCmd, hCommandSize);
+		 
+		GlobalUnlock(hCommand);
+
+#if 0
+		TCHAR buf[256];
+		_sntprintf_s(buf, 256, _T("Post: DDE_EXECUTE"));
+		MessageBox(buf, _T("Message"), MB_OK);
+#endif
+
+		// vds: UnpackDDElParam should be used for posted message
+		LPARAM responseLParam = PackDDElParam(WM_DDE_EXECUTE, 0, (UINT)hCommand);
+
+		SetTimer(TIMER_TIMEOUT, 3000, NULL); // Renew the 3 seconds timer.
+
+		m_currentDdeMsg = WM_DDE_EXECUTE;
+		if (!::PostMessage(m_hDdeServerWnd, WM_DDE_EXECUTE, reinterpret_cast<WPARAM>(m_hWnd), responseLParam)) {
+			GlobalFree(hCommand);
+			FreeDDElParam(WM_DDE_EXECUTE, responseLParam);
+		}
+	}
+
+	return false;
+}
+
+LRESULT MainFrame::OnDdeAck(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
+{
+	// vds: Depending of the origine of the message the type of original request some clean up are necessary.
+	// vds: A synchronization object should be introduced to be able wait for the ack and finish the cleanup properly.
+
+	if (m_currentDdeMsg == WM_DDE_INITIATE) {
+
+		// vds: UnpackDDElParam should be used for posted message
+		ATOM applicationAtom = LOWORD(lParam);
+		ATOM topicAtom = HIWORD(lParam);
+
+		TCHAR applicationName[256];
+		applicationName[0] = '\0';
+
+		if (applicationAtom) {
+			GlobalGetAtomName(applicationAtom, applicationName, 256);
+			GlobalDeleteAtom(applicationAtom);
+		}
+
+		TCHAR topicName[256];
+		topicName[0] = '\0';
+
+		if (topicAtom) {
+			GlobalGetAtomName(topicAtom, topicName, 256);
+			GlobalDeleteAtom(topicAtom);
+		}
+
+		if (_tcscmp(applicationName, DdeApplicationName) != 0)
+			return 0L;
+
+		if (_tcscmp(topicName, _T("System")) != 0)
+			return 0L;
+
+		m_currentDdeMsg = 0;
+		m_hDdeServerWnd = reinterpret_cast<HWND>(wParam);
+	}
+	else if (m_currentDdeMsg == WM_DDE_EXECUTE) {
+		m_currentDdeMsg = 0;
+
+		// vds: UnpackDDElParam should be used for posted message
+		UINT low;
+		UINT high;
+		UnpackDDElParam(WM_DDE_ACK, lParam, &low, &high);
+		//WORD ack = static_cast<WORD>(low);
+		DDEACK ret = *reinterpret_cast<DDEACK*>(&low);
+		HGLOBAL hCommand = reinterpret_cast<HGLOBAL>(high);
+
+		GlobalFree(hCommand);
+
+		FreeDDElParam(m_currentDdeMsg, lParam);
+
+		SetTimer(TIMER_TIMEOUT, 3000, NULL); // Renew the 3 seconds timer.
+
+		m_currentDdeMsg = WM_DDE_TERMINATE;
+		::PostMessage(reinterpret_cast<HWND>(wParam), WM_DDE_TERMINATE, reinterpret_cast<WPARAM>(m_hWnd), 0);
+	}
+
+	return 0L;
+}
+
+LRESULT MainFrame::OnDdeInitiate(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
+{
+	HWND hClientWnd = reinterpret_cast<HWND>(wParam);
+	if (hClientWnd == m_hWnd) {
+		// Do response to your own request (client and server can't be the same)
+		return 0L;
+	}
+
+#if 0
+	// If we skip the treatment of the message that early explorer complains:
+	if (g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bAllowMultipleInstances) {
+		return 0;
+	}
+#endif
+
+	// vds: UnpackDDElParam should be used for posted message (WM_DDE_INITIATE is sent)
+	ATOM applicationAtom = LOWORD(lParam);
+	ATOM topicAtom = HIWORD(lParam);
+
+	TCHAR applicationName[256];
+	applicationName[0] = '\0';
+
+	if (applicationAtom)
+		GlobalGetAtomName(applicationAtom, applicationName, 256);
+
+	if (_tcscmp(applicationName, DdeApplicationName) != 0)
+		return 0L;
+
+	TCHAR topicName[256];
+	topicName[0] = '\0';
+
+	if (topicAtom)
+		GlobalGetAtomName(topicAtom, topicName, 256);
+
+	if (_tcscmp(topicName, _T("System")) != 0)
+		return 0L;
+
+#if 0
+	TCHAR buf[1024];
+	_sntprintf_s(buf, 256, _T("OnDdeInitiate Application: %s Topic: %s"), applicationName, topicName);
+	MessageBox(buf, _T("Message"), MB_OK);
+#endif
+
+#if 1
+	// vds: Not clear yet if when you decide to rebuild atom you have to clear the one you received.
+	GlobalDeleteAtom(applicationAtom);
+	GlobalDeleteAtom(topicAtom);
+#endif
+
+	ATOM acceptedApplicationAtom = NULL;
+	ATOM acceptedTopicAtom = NULL;
+
+#if 0
+	if (g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bAllowMultipleInstances) {
+		return 0L;
+	}
+#endif
+
+	acceptedApplicationAtom = GlobalAddAtom(DdeApplicationName);
+	acceptedTopicAtom = GlobalAddAtom(_T("System"));
+
+	// vds: PackDDElParam should be used for the posted message (here we sent a message)
+	LPARAM responseLParam = MAKELPARAM(acceptedApplicationAtom, acceptedTopicAtom);
+	::SendMessage(reinterpret_cast<HWND>(wParam), WM_DDE_ACK, reinterpret_cast<WPARAM>(m_hWnd), responseLParam);
+
+	return 0L;
+}
+
+LRESULT MainFrame::OnDdeExecute(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
+{
+	DDEACK ret;
+	memset(&ret, 0, sizeof(DDEACK));
+	ret.bAppReturnCode = 0;
+	ret.fBusy = 0;
+	ret.fAck = 0;
+
+#if 0
+	TCHAR buf[1024];
+	_sntprintf_s(buf, 256, _T("OnDdeExecute"));
+	MessageBox(buf, _T("Message"), MB_OK);
+#endif
+
+	// vds: UnpackDDElParam should be used for posted message.
+	UINT_PTR unused;
+	HGLOBAL hData;
+	UnpackDDElParam(WM_DDE_EXECUTE, lParam, &unused, reinterpret_cast<UINT_PTR*>(&hData));
+
+	if (!m_refuseDdeExecuteMessage) {
+		ret.fAck = 1;
+
+		bool unicodeMessage = IsWindowUnicode() && ::IsWindowUnicode(m_hDdeServerWnd);
+
+		TCHAR *message = static_cast<TCHAR*>(GlobalLock(hData));
+		if (!message) {
+			ret.fAck = 0;
+		}
+		else {
+			TCHAR *lpstrCmdLine = message + _tcslen(_T("Open[("));
+			lpstrCmdLine[_tcslen(lpstrCmdLine) - _tcslen(_T(")]"))] = '\0';
+
+			if (g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bAllowMultipleInstances)
+			{
+#if 0
+				TCHAR buf[1024];
+				_sntprintf_s(buf, 256, _T("OnDdeExecute %s"), lpstrCmdLine);
+				MessageBox(buf, _T("Received Message"), MB_OK);
+#endif
+				// If you allow multiple instance don't let explorer reuse an existing one.
+				TCHAR module[512];
+				GetModuleFileName(0, module, sizeof(module) / sizeof(TCHAR) - 1);
+
+				TCHAR command[1024];
+				_sntprintf_s(command, sizeof(command) / sizeof(TCHAR), _T("\"%s\" %s"), module, lpstrCmdLine);
+
+				STARTUPINFO StartupInfo;
+				memset(&StartupInfo, 0, sizeof(StartupInfo));
+				StartupInfo.cb = sizeof(STARTUPINFO);
+
+				PROCESS_INFORMATION ProcessInfo;
+
+				// vds: I would like to create a process that is not a child of the current process.
+				CreateProcess(NULL, command, NULL, NULL, FALSE, NULL, NULL, NULL, &StartupInfo, &ProcessInfo);
+			}
+			else
+			{
+				wstring			strConfigFile(L"");
+				wstring			strWindowTitle(L"");
+				vector<wstring>	startupTabs;
+				vector<wstring>	startupDirs;
+				vector<wstring>	startupCmds;
+				int				nMultiStartSleep = 0;
+				wstring			strDbgCmdLine(L"");
+				WORD			iFlags = 0;
+
+				ParseCommandLine(
+					lpstrCmdLine, 
+					strConfigFile, 
+					strWindowTitle, 
+					startupTabs, 
+					startupDirs, 
+					startupCmds, 
+					nMultiStartSleep, 
+					strDbgCmdLine,
+					iFlags);
+
+				TabSettings &tabSettings = g_settingsHandler->GetTabSettings();
+				if (!startupTabs.size() && tabSettings.tabDataVector.size()) {
+					startupTabs.push_back(tabSettings.tabDataVector[0]->strTitle);
+				}
+
+				for (size_t j = 0; j < startupTabs.size(); ++j) {
+					wstring startupTab = startupTabs[j];
+
+					for (size_t i = 0; i < tabSettings.tabDataVector.size(); ++i) {
+						shared_ptr<TabData> tabData = tabSettings.tabDataVector[i];
+						wstring str = tabData->strTitle;
+
+						wstring startupDir = _T("");
+						if (j < startupDirs.size())
+							startupDir = startupDirs[j];
+
+						//MessageBox(startupDir.c_str(), _T("Startup Dir"), MB_OK);
+
+						wstring startupCmd = _T("");
+						if (j < startupCmds.size())
+							startupCmd = startupCmds[j];
+
+						ConsoleView *existingTab = NULL;
+						if (g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bReuseTab)
+							existingTab = LookupTab(tabData, startupDir);
+
+						if (existingTab) {
+							DisplayTab(existingTab->m_hWnd, FALSE);
+						}
+						else if (tabSettings.tabDataVector[i]->strTitle == startupTab) {
+							// Found it, create
+							if (!CreateNewConsole(
+								static_cast<DWORD>(i), // Tab index
+								wstring(startupDir), // Startup Dir
+								wstring(startupCmd), // Startup Cmd
+								wstring(strDbgCmdLine))) // Dbg CmdLine
+							{
+								return 0L;
+							}
+							break;
+						}
+					}
+				}
+				// Restore the application if it has been minimized:
+				WINDOWPLACEMENT placement;
+				memset(&placement, 0, sizeof(WINDOWPLACEMENT));
+				placement.length = sizeof(WINDOWPLACEMENT);
+
+				GetWindowPlacement(&placement);
+				placement.flags = WPF_ASYNCWINDOWPLACEMENT;
+				placement.showCmd = SW_RESTORE;
+				SetWindowPlacement(&placement);
+			}
+			GlobalUnlock(hData);
+		}
+	}
+
+	// vds: UnpackDDElParam should be used for posted message.
+	LPARAM responseLParam = ReuseDDElParam(lParam, WM_DDE_EXECUTE, WM_DDE_ACK, *reinterpret_cast<UINT_PTR*>(&ret), reinterpret_cast<UINT_PTR>(hData));
+
+	::PostMessage(reinterpret_cast<HWND>(wParam), WM_DDE_ACK, reinterpret_cast<WPARAM>(m_hWnd), responseLParam);
+
+	return 0L;
+}
+
+LRESULT MainFrame::OnDdeTerminate(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+{
+	if (m_bOneInstance) {
+		if (m_currentDdeMsg == WM_DDE_TERMINATE) {
+			DestroyWindow();
+		}
+	}
+	else {
+		::PostMessage(reinterpret_cast<HWND>(wParam), WM_DDE_TERMINATE, reinterpret_cast<WPARAM>(m_hWnd), 0);
+	}
+
+	return 0L;
+}
+// vds: <<
+
+// vds: Reuse exising tab >>
+ConsoleView* MainFrame::LookupTab(shared_ptr<TabData> tabData, wstring startupDir)
+{
+	for (ConsoleViewMap::iterator i = m_views.begin(); i != m_views.end(); ++i) {
+		shared_ptr<ConsoleView> view = i->second;
+
+		if (view->GetTabData()->strTitle != tabData->strTitle)
+			continue;
+
+		if (!view->IsWorkingDirFit(startupDir))
+			continue;
+#if 0
+		MessageBox(_T("Found Tab"), _T("Message"), MB_OK);
+#endif
+
+		if (!g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bReuseBusyTab && view->HasChildProcesses())
+			continue;
+
+		return view.get();
+	}
+	return NULL;
+}
+// vds: <<
