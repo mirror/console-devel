@@ -2523,3 +2523,92 @@ COORD ConsoleView::GetConsoleCoord(const CPoint& clientPoint)
 
 /////////////////////////////////////////////////////////////////////////////
 
+// vds:  Reuse exising tab >>
+#include "NtProcessInfo.h"
+
+wstring GetProcessCurrentDir(HANDLE hProcess)
+{
+	DWORD processId = GetProcessId(hProcess);
+
+	HMODULE hNtDll = sm_LoadNTDLLFunctions();
+	if (!hNtDll)
+		wstring(_T(""));
+
+	smPROCESSINFO processInfo;
+	BOOL ret = sm_GetNtProcessInfo(processId, &processInfo);
+	sm_FreeNTDLLFunctions(hNtDll);
+
+	if (!ret)
+		wstring(_T(""));
+
+	return wstring(processInfo.szCurrentDirectoryPath);
+}
+
+wstring NormalizeDir(wstring dir)
+{
+	wstring ret = dir;
+
+	while (ret.length() && ret[ret.length() - 1] == '"')
+		ret.erase(ret.end() - 1);
+
+	while (ret.length() && ret[0] == '"')
+		ret.erase(ret.begin());
+
+	if (ret.length() && dir[ret.length() - 1] != '\\')
+		ret.append(1, '\\');
+
+	return ret;
+}
+
+bool ConsoleView::IsWorkingDirFit(wstring workingDir)
+{
+	workingDir = NormalizeDir(workingDir);
+
+	wstring currentDir = GetProcessCurrentDir(m_consoleHandler.GetConsoleHandle().get());
+	currentDir = NormalizeDir(currentDir);
+
+#if 0
+	MessageBox(currentDir.c_str(), _T("Current Dir"), MB_OK);
+	MessageBox(workingDir.c_str(), _T("Working Dir"), MB_OK);
+#endif
+
+	if (_tcsicmp(currentDir.c_str(), workingDir.c_str()) != 0)
+		return false;
+
+	return true;
+}
+
+bool ConsoleView::HasChildProcesses()
+{
+	DWORD processId = GetProcessId(m_consoleHandler.GetConsoleHandle().get());
+
+	DWORD processIds[4096];
+	DWORD byteReturned;
+	EnumProcesses(processIds, sizeof(processIds), &byteReturned);
+
+	HMODULE hNtDll = sm_LoadNTDLLFunctions();
+	if (!hNtDll)
+		// If we can't know suppose true.
+		return true;
+
+	bool ret = false;
+	for (unsigned int i = 0; i < byteReturned / sizeof(DWORD); ++i) {
+		DWORD childProcessId = processIds[i];
+
+		smPROCESSINFO processInfo;
+		BOOL sucess = sm_GetNtProcessInfo(childProcessId, &processInfo);
+		if (!sucess)
+			continue;
+
+		if (processInfo.dwParentPID != processId)
+			continue;
+
+		ret = true;
+		break;
+	}
+
+	sm_FreeNTDLLFunctions(hNtDll);
+
+	return ret;
+}
+// vds: <<

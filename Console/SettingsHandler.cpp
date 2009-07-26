@@ -1009,6 +1009,176 @@ AnimateSettings& AnimateSettings::operator=(const AnimateSettings& other)
 
 //////////////////////////////////////////////////////////////////////////////
 
+#if 1
+OneInstanceSettings::OneInstanceSettings()
+: bAllowMultipleInstances(true)
+, bReuseTab(false)
+, bReuseBusyTab(false)
+{
+}
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+bool OneInstanceSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+{
+	CComPtr<IXMLDOMElement>	pOneInstanceElement;
+
+	if (FAILED(XmlHelper::GetDomElement(pSettingsRoot, CComBSTR(L"behavior/one_instance"), pOneInstanceElement))) {
+		// If the one_instance tag is not present create it.
+		CComPtr<IXMLDOMElement>	pBehaviorElement;
+		if (FAILED(XmlHelper::GetDomElement(pSettingsRoot, CComBSTR(L"behavior"), pBehaviorElement))) return false;
+
+		CComPtr<IXMLDOMDocument> pSettingsDoc;
+		pSettingsRoot->get_ownerDocument(&pSettingsDoc);
+
+		CComPtr<IXMLDOMNode>	pOneInstanceOut;
+
+		if (FAILED(pSettingsDoc->createElement(CComBSTR(L"one_instance"), &pOneInstanceElement)))
+			return false;
+
+		pBehaviorElement->appendChild(pOneInstanceElement, &pOneInstanceOut);
+		SettingsBase::AddTextNode(pSettingsDoc, pBehaviorElement, CComBSTR(L"\n\t"));
+	}
+
+	XmlHelper::GetAttribute(pOneInstanceElement, CComBSTR(L"allow_multiple_intances"), bAllowMultipleInstances, true);
+	XmlHelper::GetAttribute(pOneInstanceElement, CComBSTR(L"reuse_tab"), bReuseTab, false);
+	XmlHelper::GetAttribute(pOneInstanceElement, CComBSTR(L"reuse_busy_tab"), bReuseBusyTab, false);
+
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+bool OneInstanceSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+{
+	CComPtr<IXMLDOMElement>	pOneInstanceElement;
+
+	if (FAILED(XmlHelper::GetDomElement(pSettingsRoot, CComBSTR(L"behavior/one_instance"), pOneInstanceElement))) {
+			return false;
+	}
+
+	XmlHelper::SetAttribute(pOneInstanceElement, CComBSTR(L"allow_multiple_intances"), bAllowMultipleInstances);
+	XmlHelper::SetAttribute(pOneInstanceElement, CComBSTR(L"reuse_tab"), bReuseTab);
+	XmlHelper::SetAttribute(pOneInstanceElement, CComBSTR(L"reuse_busy_tab"), bReuseBusyTab);
+
+	return true;
+}
+
+bool IsKeyPresent(TCHAR *path) 
+{
+	HKEY key;
+
+	if (RegOpenKeyEx(HKEY_CLASSES_ROOT, path, 0, KEY_READ, &key) != ERROR_SUCCESS)
+		return false;
+
+	RegCloseKey(key);
+	return true;
+}
+
+bool OneInstanceSettings::IsConsoleIntegratedWithExplorer()
+{
+	if (!IsKeyPresent(_T("*\\shell\\console")))
+		return false;
+
+	if (!IsKeyPresent(_T("*\\shell\\console\\command")))
+		return false;
+
+	if (!IsKeyPresent(_T("*\\shell\\console\\ddeexec")))
+		return false;
+
+	if (!IsKeyPresent(_T("*\\shell\\console\\ddeexec\\Application")))
+		return false;
+
+	if (!IsKeyPresent(_T("*\\shell\\console\\ddeexec\\Topic")))
+		return false;
+
+
+	if (!IsKeyPresent(_T("Directory\\shell\\Console")))
+		return false;
+
+	if (!IsKeyPresent(_T("Directory\\shell\\Console\\command")))
+		return false;
+
+	if (!IsKeyPresent(_T("Directory\\shell\\Console\\ddeexec")))
+		return false;
+
+	if (!IsKeyPresent(_T("Directory\\shell\\Console\\ddeexec\\Application")))
+		return false;
+
+	if (!IsKeyPresent(_T("Directory\\shell\\Console\\ddeexec\\Topic")))
+		return false;
+
+	return true;
+}
+
+void SetKeyValue(TCHAR *path, TCHAR *value)
+{
+	HKEY key;
+
+	if (RegCreateKey(HKEY_CLASSES_ROOT, path, &key) != ERROR_SUCCESS)
+		return;
+	RegCloseKey(key);
+
+	RegSetValue(HKEY_CLASSES_ROOT, path, REG_SZ, value, _tcslen(value) * sizeof(TCHAR));
+}
+
+void OneInstanceSettings::IntegrateConsoleWithExplorer(bool integrate)
+{
+	TCHAR module[512];
+	GetModuleFileName(0, module, sizeof(module) / sizeof(TCHAR) - 1);
+
+	TCHAR line[512];
+	_sntprintf(line, sizeof(line) / sizeof(TCHAR) - 1, _T("%s -d \"%%1\""), module);
+
+	if (integrate) {
+		SetKeyValue(_T("*\\shell\\console"), _T("&Console"));
+		SetKeyValue(_T("*\\shell\\console\\command"), line);
+		SetKeyValue(_T("*\\shell\\console\\ddeexec"), _T("[Open(-d \"%1\")]"));
+		SetKeyValue(_T("*\\shell\\console\\ddeexec\\Application"), _T("Console"));
+		SetKeyValue(_T("*\\shell\\console\\ddeexec\\Topic"), _T("System"));
+
+		SetKeyValue(_T("Directory\\shell\\Console"), _T("&Console"));
+		SetKeyValue(_T("Directory\\shell\\Console\\command"), line);
+		SetKeyValue(_T("Directory\\shell\\Console\\ddeexec"), _T("[Open(-d \"%1\")]"));
+		SetKeyValue(_T("Directory\\shell\\Console\\ddeexec\\Application"), _T("Console"));
+		SetKeyValue(_T("Directory\\shell\\Console\\ddeexec\\Topic"), _T("System"));
+	}
+	else {
+		HRESULT result;
+		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("*\\shell\\Console\\ddeexec\\Application"));
+		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("*\\shell\\Console\\ddeexec\\Topic"));
+		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("*\\shell\\Console\\ddeexec"));
+		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("*\\shell\\Console\\command"));
+		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("*\\shell\\Console"));
+
+		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("Directory\\shell\\Console\\ddeexec\\Application"));
+		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("Directory\\shell\\Console\\ddeexec\\Topic"));
+		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("Directory\\shell\\Console\\ddeexec"));
+		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("Directory\\shell\\Console\\command"));
+		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("Directory\\shell\\Console"));
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+OneInstanceSettings& OneInstanceSettings::operator=(const OneInstanceSettings& other)
+{
+	bAllowMultipleInstances	= other.bAllowMultipleInstances;
+	bReuseTab				= other.bReuseTab;
+	bReuseBusyTab			= other.bReuseBusyTab;
+
+	return *this;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -1032,6 +1202,7 @@ bool BehaviorSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 	scrollSettings.Load(pSettingsRoot);
 	tabHighlightSettings.Load(pSettingsRoot);
 //	animateSettings.Load(pSettingsRoot);
+	oneInstanceSettings.Load(pSettingsRoot); // vds:
 	return true;
 }
 
@@ -1046,6 +1217,7 @@ bool BehaviorSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 	scrollSettings.Save(pSettingsRoot);
 	tabHighlightSettings.Save(pSettingsRoot);
 //	animateSettings.Save(pSettingsRoot);
+	oneInstanceSettings.Save(pSettingsRoot); // vds:
 	return true;
 }
 
@@ -1060,6 +1232,7 @@ BehaviorSettings& BehaviorSettings::operator=(const BehaviorSettings& other)
 	scrollSettings		= other.scrollSettings;
 	tabHighlightSettings= other.tabHighlightSettings;
 //	animateSettings		= other.animateSettings;
+	oneInstanceSettings	= other.oneInstanceSettings; // vds:
 
 	return *this;
 }

@@ -44,6 +44,14 @@ LRESULT DlgSettingsBehavior::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPAR
 	m_nFlashInactiveTab= m_behaviorSettings.tabHighlightSettings.dwFlashes > 0 ? 1 : 0;
 	m_nLeaveHighlighted= m_behaviorSettings.tabHighlightSettings.bStayHighlighted ? 1 : 0;
 
+	// vds: >>
+	m_nAllowMultipleInstances = m_behaviorSettings.oneInstanceSettings.bAllowMultipleInstances ? 1 : 0;
+	m_nReuseTab = m_behaviorSettings.oneInstanceSettings.bReuseTab ? 1 : 0;
+	m_nReuseBusyTab = m_behaviorSettings.oneInstanceSettings.bReuseBusyTab ? 1 : 0;
+
+	m_nIntegrateWithExplorer = m_behaviorSettings.oneInstanceSettings.IsConsoleIntegratedWithExplorer();
+	// vds: <<
+
 	CUpDownCtrl	spin;
 	UDACCEL		udAccel;
 
@@ -91,6 +99,21 @@ LRESULT DlgSettingsBehavior::OnCloseCmd(WORD /*wNotifyCode*/, WORD wID, HWND /*h
 		if (m_nFlashInactiveTab == 0) m_behaviorSettings.tabHighlightSettings.dwFlashes = 0;
 		m_behaviorSettings.tabHighlightSettings.bStayHighlighted = (m_nLeaveHighlighted > 0);
 
+		// vds: >>
+		m_behaviorSettings.oneInstanceSettings.bAllowMultipleInstances = (m_nAllowMultipleInstances > 0);
+		m_behaviorSettings.oneInstanceSettings.bReuseTab = (m_nReuseTab > 0);
+		m_behaviorSettings.oneInstanceSettings.bReuseBusyTab = (m_nReuseBusyTab > 0);
+
+		if (m_nIntegrateWithExplorer) {
+			if (!m_behaviorSettings.oneInstanceSettings.IsConsoleIntegratedWithExplorer())
+				m_behaviorSettings.oneInstanceSettings.IntegrateConsoleWithExplorer(true);
+		}
+		else {
+			if (m_behaviorSettings.oneInstanceSettings.IsConsoleIntegratedWithExplorer())
+				m_behaviorSettings.oneInstanceSettings.IntegrateConsoleWithExplorer(false);
+		}
+		// vds: <<
+
 		BehaviorSettings& behaviorSettings = g_settingsHandler->GetBehaviorSettings();
 
 		behaviorSettings = m_behaviorSettings;
@@ -129,7 +152,14 @@ LRESULT DlgSettingsBehavior::OnClickedFlashTab(WORD /*wNotifyCode*/, WORD /*wID*
 
 
 //////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
+
+LRESULT DlgSettingsBehavior::OnClickedReuseTab(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
+{
+	DoDataExchange(DDX_SAVE);
+	EnableOnInstanceControls();
+	return 0;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 
 
@@ -183,5 +213,19 @@ void DlgSettingsBehavior::EnableFlashTabControls()
 //////////////////////////////////////////////////////////////////////////////
 
 
+//////////////////////////////////////////////////////////////////////////////
+
+// vds: >>
+void DlgSettingsBehavior::EnableOnInstanceControls()
+{
+	GetDlgItem(IDC_REUSE_BUSY_TAB).EnableWindow(FALSE);
+
+	if (m_nReuseTab) {
+		GetDlgItem(IDC_REUSE_BUSY_TAB).EnableWindow();
+	}
+}
+// vds: <<
+
+//////////////////////////////////////////////////////////////////////////////
 
 

@@ -89,6 +89,8 @@ using namespace boost::multi_index;
 #include "../shared/SharedMemory.h"
 #include "../shared/Structures.h"
 
+#include "../shared/Messages.h"
+
 #include "Helpers.h"
 #include "ConsoleHandler.h"
 #include "ImageHandler.h"

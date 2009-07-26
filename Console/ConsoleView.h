@@ -128,6 +128,9 @@ class ConsoleView
 		void DumpBuffer();
 		void InitializeScrollbars();
 
+		bool IsWorkingDirFit(wstring workingDir); // vds: Reuse exising tab
+		bool HasChildProcesses(); // vds: Reuse exising tab
+
 	private:
 
 		void OnConsoleChange(bool bResize);
