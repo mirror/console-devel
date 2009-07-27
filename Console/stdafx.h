@@ -207,4 +207,4 @@ void Trace(const wchar_t* pszFormat, ...);
 //////////////////////////////////////////////////////////////////////////
 
 // uncomment next line to enable use of WM_COPYDATA interface
-#define USE_COPYDATA_MSG
+//#define USE_COPYDATA_MSG
