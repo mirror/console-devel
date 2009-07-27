@@ -54,7 +54,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="D:\Work\Gray\Projects\Global\contrib\boost;D:\Work\Gray\InterestingProjects\Console2\contrib;D:\Work\Gray\Projects\Global\contrib\wtl\include"
+				AdditionalIncludeDirectories="..\contrib\wtl\include;..\contrib;..\contrib\boost\"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG;_USRDLL"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"

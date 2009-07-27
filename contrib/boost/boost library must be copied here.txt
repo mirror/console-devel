@@ -1,0 +1,1 @@
+"boost" folder with .hpp includes from boost installation must be copied here. 
