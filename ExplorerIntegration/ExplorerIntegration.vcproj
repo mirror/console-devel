@@ -145,7 +145,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="D:\Work\Gray\InterestingProjects\Console2\contrib;D:\Work\Gray\Projects\Global\contrib\wtl\include;D:\Work\Gray\Projects\Global\contrib\boost"
+				AdditionalIncludeDirectories="..\contrib\wtl\include;..\contrib;..\contrib\boost\"
 				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;_USRDLL"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="2"

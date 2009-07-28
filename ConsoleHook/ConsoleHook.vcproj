@@ -121,6 +121,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="..\contrib\wtl\include;..\contrib;..\contrib\boost\"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;CONSOLEHOOK_EXPORTS"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="2"
