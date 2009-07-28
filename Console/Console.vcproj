@@ -145,7 +145,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Zm200"
-				AdditionalIncludeDirectories="D:\Work\Gray\Projects\Global\contrib\wtl\include;D:\Work\Gray\Interesting projects\Console2\contrib\;D:\Work\Gray\Projects\Global\contrib\boost\"
+				AdditionalIncludeDirectories="..\contrib\wtl\include;..\contrib;..\contrib\boost\"
 				PreprocessorDefinitions="WIN32;_WINDOWS;STRICT;NDEBUG"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
@@ -161,7 +161,7 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG"
 				Culture="1033"
-				AdditionalIncludeDirectories="$(IntDir);D:\Work\Gray\Projects\Global\contrib\wtl\include\"
+				AdditionalIncludeDirectories="$(IntDir);..\contrib\wtl\include\"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
