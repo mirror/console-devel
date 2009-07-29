@@ -147,7 +147,7 @@ void AnimationWindow::HA()
 
 LRESULT AnimationWindow::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 {
-/*
+#if 0
 	// create background DC
 	m_dcWindow.CreateCompatibleDC(GetDC());
 
@@ -254,7 +254,7 @@ LRESULT AnimationWindow::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lPa
 
 	// finally, show the window
 	ShowWindow(SW_SHOW);
-*/
+#endif
 	TRACE(L"AnimationWindow OnCreate\n");
 
 	m_rectWindow.left = 100;

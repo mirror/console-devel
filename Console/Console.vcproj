@@ -145,7 +145,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Zm200"
-				AdditionalIncludeDirectories="..\contrib\wtl\include;..\contrib;..\contrib\boost\"
+				AdditionalIncludeDirectories="..\contrib\wtl\include;..\contrib\;..\contrib\boost\"
 				PreprocessorDefinitions="WIN32;_WINDOWS;STRICT;NDEBUG"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
