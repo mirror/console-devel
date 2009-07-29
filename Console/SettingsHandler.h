@@ -382,12 +382,28 @@ struct OneInstanceSettings : public SettingsBase
 
 	OneInstanceSettings& operator=(const OneInstanceSettings& other);
 
-	bool IsConsoleIntegratedWithExplorer();
-	void IntegrateConsoleWithExplorer(bool integrate);
+	//bool IsConsoleIntegratedWithExplorer();
+	//void IntegrateConsoleWithExplorer(bool integrate);
 
 	bool	bAllowMultipleInstances;
 	bool	bReuseTab;
 	bool	bReuseBusyTab;
+};
+
+struct ShellSettings : public SettingsBase
+{
+	ShellSettings();
+
+	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+
+	ShellSettings& operator=(const ShellSettings& other);
+
+	bool IsConsoleIntegratedWithExplorer();
+	void IntegrateConsoleWithExplorer(bool integrate);
+
+	bool	bRunConsoleMenItem;
+	bool	bRunConsoleTabMenuItem;
 };
 // vds: <<
 
@@ -410,6 +426,7 @@ struct BehaviorSettings : public SettingsBase
 	TabHighlightSettings	tabHighlightSettings;
 //	AnimateSettings			animateSettings;
 	OneInstanceSettings		oneInstanceSettings; // vds:
+	ShellSettings			shellSettings; // vds:
 };
 
 //////////////////////////////////////////////////////////////////////////////

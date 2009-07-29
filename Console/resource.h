@@ -216,6 +216,9 @@
 #define IDC_REUSE_TAB                   1174
 #define IDC_DONT_REUSE_BUSY_TAB         1175
 #define IDC_REUSE_BUSY_TAB              1175
+#define IDC_RUN_CONSOLE                 1176
+#define IDC_CHECK_RUN_CONSOLE_TAB       1177
+#define IDC_RUN_CONSOLE_TAB             1177
 #define ID_NEW_TAB_1                    2000
 #define ID_SWITCH_TAB_1                 2100
 #define ID_NEXT_TAB                     2200
@@ -241,7 +244,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        215
 #define _APS_NEXT_COMMAND_VALUE         32794
-#define _APS_NEXT_CONTROL_VALUE         1176
+#define _APS_NEXT_CONTROL_VALUE         1178
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -49,7 +49,9 @@ LRESULT DlgSettingsBehavior::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPAR
 	m_nReuseTab = m_behaviorSettings.oneInstanceSettings.bReuseTab ? 1 : 0;
 	m_nReuseBusyTab = m_behaviorSettings.oneInstanceSettings.bReuseBusyTab ? 1 : 0;
 
-	m_nIntegrateWithExplorer = m_behaviorSettings.oneInstanceSettings.IsConsoleIntegratedWithExplorer();
+	m_nIntegrateWithExplorer = m_behaviorSettings.shellSettings.IsConsoleIntegratedWithExplorer();
+	m_nRunConsoleMenuItem = m_behaviorSettings.shellSettings.bRunConsoleMenItem ? 1 : 0;
+	m_nRunConsoleTabMenuItem = m_behaviorSettings.shellSettings.bRunConsoleTabMenuItem ? 1 : 0;
 	// vds: <<
 
 	CUpDownCtrl	spin;
@@ -106,13 +108,15 @@ LRESULT DlgSettingsBehavior::OnCloseCmd(WORD /*wNotifyCode*/, WORD wID, HWND /*h
 		m_behaviorSettings.oneInstanceSettings.bReuseBusyTab = (m_nReuseBusyTab > 0);
 
 		if (m_nIntegrateWithExplorer) {
-			if (!m_behaviorSettings.oneInstanceSettings.IsConsoleIntegratedWithExplorer())
-				m_behaviorSettings.oneInstanceSettings.IntegrateConsoleWithExplorer(true);
+			if (!m_behaviorSettings.shellSettings.IsConsoleIntegratedWithExplorer())
+				m_behaviorSettings.shellSettings.IntegrateConsoleWithExplorer(true);
 		}
 		else {
-			if (m_behaviorSettings.oneInstanceSettings.IsConsoleIntegratedWithExplorer())
-				m_behaviorSettings.oneInstanceSettings.IntegrateConsoleWithExplorer(false);
+			if (m_behaviorSettings.shellSettings.IsConsoleIntegratedWithExplorer())
+				m_behaviorSettings.shellSettings.IntegrateConsoleWithExplorer(false);
 		}
+		m_behaviorSettings.shellSettings.bRunConsoleMenItem = (m_nRunConsoleMenuItem > 0);
+		m_behaviorSettings.shellSettings.bRunConsoleTabMenuItem = (m_nRunConsoleTabMenuItem > 0);
 		// vds: <<
 
 		BehaviorSettings& behaviorSettings = g_settingsHandler->GetBehaviorSettings();
@@ -163,6 +167,17 @@ LRESULT DlgSettingsBehavior::OnClickedReuseTab(WORD /*wNotifyCode*/, WORD /*wID*
 
 //////////////////////////////////////////////////////////////////////////////
 
+
+//////////////////////////////////////////////////////////////////////////////
+
+LRESULT DlgSettingsBehavior::OnClickedIntegrateWithExplorer(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
+{
+	DoDataExchange(DDX_SAVE);
+	EnableOnInstanceControls();
+	return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -223,6 +238,14 @@ void DlgSettingsBehavior::EnableOnInstanceControls()
 
 	if (m_nReuseTab) {
 		GetDlgItem(IDC_REUSE_BUSY_TAB).EnableWindow();
+	}
+
+	GetDlgItem(IDC_RUN_CONSOLE).EnableWindow(FALSE);
+	GetDlgItem(IDC_RUN_CONSOLE_TAB).EnableWindow(FALSE);
+	
+	if (m_nIntegrateWithExplorer) {
+		GetDlgItem(IDC_RUN_CONSOLE).EnableWindow();
+		GetDlgItem(IDC_RUN_CONSOLE_TAB).EnableWindow();
 	}
 }
 // vds: <<
