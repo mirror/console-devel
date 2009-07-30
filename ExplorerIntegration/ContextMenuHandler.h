@@ -14,9 +14,9 @@ enum eContextMenuCommands{
 };
 
 // Used registry structure
-// HKEY_LOCAL_MACHINE\Software\Console2\Explorer Integration\
+// HKEY_LOCAL_MACHINE\Software\Console\Explorer Integration\
 // (REG_SZ)Path - path to Console executable
-// HKEY_CURRENT_USER\Software\Console2\Explorer Integration\<tab name>\
+// HKEY_CURRENT_USER\Software\Console\Explorer Integration\<tab name>\
 // (REG_SZ,optional)Icon - path to icon
 
 

@@ -7,12 +7,12 @@
 //////////////////////////////////////////////////////////////////////////
 // constants and defines
 //////////////////////////////////////////////////////////////////////////
-const TCHAR		szConfigPath[] = _T("Software\\Console2\\Explorer Integration");
+const TCHAR		szConfigPath[] = _T("Software\\Console\\Explorer Integration");
 const TCHAR		szConfigVTabs[] = _T("Tabs");
 const TCHAR		szConfigVPath[] = _T("Path");
 const TCHAR		szExeName[] = _T("Console.exe");
-TCHAR			szItemRunConsole[] = _T("Run Console here...");
-TCHAR			szItemRunConsoleWithTab[] = _T("Run Console with");
+TCHAR			szItemRunConsole[] = _T("Run Console");
+TCHAR			szItemRunConsoleWithTab[] = _T("Run Console Tab");
 const char		szVerbRunConsoleA[] = "run";
 const wchar_t	szVerbRunConsoleW[] = L"run";
 const char		szDescrRunConsoleA[] = "Run Console here";
@@ -197,13 +197,17 @@ STDMETHODIMP CContextMenuHandler::QueryContextMenu(HMENU hmenu,UINT indexMenu,UI
 	f_log(tbuf);
 #endif
 
-	if((!(CMF_DEFAULTONLY&uFlags))&&(!sPath.IsEmpty()))
-	{
-		MENUITEMINFO	ii;
-		HMENU			hSubMenu = CreateMenu();
-		DWORD			i,lim;
-		if(!hSubMenu) return MAKE_HRESULT(SEVERITY_SUCCESS, 0, USHORT(0));
-		// fill main menu first item info
+	if (CMF_DEFAULTONLY & uFlags)
+		return MAKE_HRESULT(SEVERITY_SUCCESS, 0, USHORT(0));
+
+	if (sPath.IsEmpty())
+		return MAKE_HRESULT(SEVERITY_SUCCESS, 0, USHORT(0));
+
+	MENUITEMINFO ii;
+	DWORD lastId = idCmdFirst;
+
+	if (g_settingsHandler->GetBehaviorSettings().shellSettings.bRunConsoleMenItem) {
+		// Fill main menu first item info
 		memset(&ii,0,sizeof(MENUITEMINFO));
 		ii.cbSize = sizeof(MENUITEMINFO);
 		ii.fMask = MIIM_CHECKMARKS|MIIM_STRING|MIIM_ID;
@@ -212,31 +216,38 @@ STDMETHODIMP CContextMenuHandler::QueryContextMenu(HMENU hmenu,UINT indexMenu,UI
 		ii.cch = _tcslen(szItemRunConsole);
 		ii.hbmpChecked = (HBITMAP)LoadImage(_AtlBaseModule.GetResourceInstance(),MAKEINTRESOURCE(IDB_MENU_PICTURE),IMAGE_BITMAP,0,0,LR_LOADTRANSPARENT);
 		ii.hbmpUnchecked = (HBITMAP)LoadImage(_AtlBaseModule.GetResourceInstance(),MAKEINTRESOURCE(IDB_MENU_PICTURE),IMAGE_BITMAP,0,0,LR_LOADTRANSPARENT);
-		// insert menu item
-		InsertMenuItem(hmenu,indexMenu,TRUE,&ii);
-		// create submeny
-		{
-			// synchronization
-			syncAutoLock	oLock(g_oSync);
+		// Insert menu item
+		InsertMenuItem(hmenu, indexMenu++, TRUE, &ii);
 
-			for(i=0,lim=g_vTabs.size();i<lim;++i)
-			{
-				wstring		sTabName = g_vTabs[i]->sName;
-				HBITMAP		hTabIcon = g_vTabs[i]->hIconBmp;
-				// fill main menu item info
-				memset(&ii,0,sizeof(MENUITEMINFO));
-				ii.cbSize = sizeof(MENUITEMINFO);
-				ii.fMask = MIIM_STRING|MIIM_ID|(hTabIcon?MIIM_CHECKMARKS:0);
-				ii.wID = idCmdFirst + eMC_RunConsoleWithTab + i;
-				ii.dwTypeData = const_cast<LPTSTR>(sTabName.c_str());
-				ii.cch = sTabName.size();
-				if(hTabIcon)
-					ii.hbmpChecked=ii.hbmpUnchecked=hTabIcon;
-				// insert menu item
-				InsertMenuItem(hSubMenu,i,TRUE,&ii);
-			}
+		lastId = ii.wID;
+	}
+
+	if (g_settingsHandler->GetBehaviorSettings().shellSettings.bRunConsoleTabMenuItem) {
+		HMENU hSubMenu = CreateMenu();
+		if (!hSubMenu)
+			return MAKE_HRESULT(SEVERITY_SUCCESS, 0, USHORT(0));
+
+		// Create submenu
+		DWORD i, lim;
+		for (i = 0, lim = g_vTabs.size(); i < lim; ++i)
+		{
+			wstring		sTabName = g_vTabs[i]->sName;
+			HBITMAP		hTabIcon = g_vTabs[i]->hIconBmp;
+			// Fill main menu item info
+			memset(&ii, 0, sizeof(MENUITEMINFO));
+			ii.cbSize = sizeof(MENUITEMINFO);
+			ii.fMask = MIIM_STRING | MIIM_ID | (hTabIcon ? MIIM_CHECKMARKS : 0);
+			ii.wID = idCmdFirst + eMC_RunConsoleWithTab + i;
+			ii.dwTypeData = const_cast<LPTSTR>(sTabName.c_str());
+			ii.cch = sTabName.size();
+			if (hTabIcon)
+				ii.hbmpChecked=ii.hbmpUnchecked=hTabIcon;
+			// Insert menu item
+			InsertMenuItem(hSubMenu,i,TRUE,&ii);
+
+			lastId = ii.wID;
 		}
-		// fill main menu item info
+		// Fill main menu item info
 		memset(&ii,0,sizeof(MENUITEMINFO));
 		ii.cbSize = sizeof(MENUITEMINFO);
 		ii.fMask = MIIM_CHECKMARKS|MIIM_STRING|MIIM_SUBMENU;
@@ -246,10 +257,11 @@ STDMETHODIMP CContextMenuHandler::QueryContextMenu(HMENU hmenu,UINT indexMenu,UI
 		ii.hbmpChecked = (HBITMAP)LoadImage(_AtlBaseModule.GetResourceInstance(),MAKEINTRESOURCE(IDB_MENU_PICTURE),IMAGE_BITMAP,0,0,LR_LOADTRANSPARENT);
 		ii.hbmpUnchecked = (HBITMAP)LoadImage(_AtlBaseModule.GetResourceInstance(),MAKEINTRESOURCE(IDB_MENU_PICTURE),IMAGE_BITMAP,0,0,LR_LOADTRANSPARENT);
 		// insert menu item
-		if(InsertMenuItem(hmenu,indexMenu+1,TRUE,&ii))
-			return MAKE_HRESULT(SEVERITY_SUCCESS, 0, USHORT(eMC_RunConsoleWithTab + i + 1));
+		InsertMenuItem(hmenu, indexMenu++, TRUE, &ii);
+
+		lastId = idCmdFirst + eMC_RunConsoleWithTab + g_vTabs.size();
 	}
-	return MAKE_HRESULT(SEVERITY_SUCCESS, 0, USHORT(0));
+	return MAKE_HRESULT(SEVERITY_SUCCESS, 0, USHORT(lastId - idCmdFirst + 1));
 }
 
 STDMETHODIMP CContextMenuHandler::InvokeCommand(CMINVOKECOMMANDINFO *pici)
@@ -375,15 +387,16 @@ int CContextMenuHandler::RunConsole(LPCTSTR sQueriedPath,LPCTSTR sQueriedTab)
 	f_log(tbuf);
 #endif
 
-	// run process
+	// Run process
 	STARTUPINFO	si;
 	PROCESS_INFORMATION	pi;
 	memset(&si,0,sizeof(STARTUPINFO));
 	si.cb = sizeof(STARTUPINFO);
 
-	if(CreateProcess(NULL,sCmdLine.GetBuffer(),NULL,NULL,FALSE,DETACHED_PROCESS,NULL,NULL,&si,&pi))
-	{// success
-		// close handles
+	if (CreateProcess(NULL,sCmdLine.GetBuffer(),NULL,NULL,FALSE,DETACHED_PROCESS,NULL,NULL,&si,&pi))
+	{
+		// Success
+		// Close handles
 		CloseHandle(pi.hThread);
 		CloseHandle(pi.hProcess);
 	}

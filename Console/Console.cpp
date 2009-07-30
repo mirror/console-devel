@@ -154,7 +154,7 @@ void ParseCommandLine
 		else if (wstring(argv[i]) == wstring(L"-reuse"))
 		{
 			// reuse existing console instance if running, mutual exclusive with -new
-			iFlags |= CLF_TRY_2REUSE_PREV_INSTANCE;
+			iFlags |= CLF_REUSE_PREV_INSTANCE;
 		}
 		else if (wstring(argv[i]) == wstring(L"-new"))
 		{
@@ -195,7 +195,8 @@ wstring BuildCommandLine(
 	vector<wstring>& startupDirs, 
 	vector<wstring>& startupCmds, 
 	int nMultiStartSleep, 
-	wstring strDbgCmdLine
+	wstring strDbgCmdLine,
+	WORD iFlags
 )
 {
 	wstring ret;
@@ -251,6 +252,12 @@ wstring BuildCommandLine(
 		_sntprintf_s(szMultiStartSleep, 256, sizeof(szMultiStartSleep) / sizeof(TCHAR), _T(" -ts %d"), nMultiStartSleep);
 		ret += szMultiStartSleep;
 	}
+
+	if (iFlags & CLF_REUSE_PREV_INSTANCE)
+		ret += _T(" -reuse");
+
+	if (iFlags & CLF_FORCE_NEW_INSTANCE)
+		ret += _T(" -new");
 
 	return ret;
 }
@@ -328,7 +335,10 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 		return -1;
 	}
 	// vds: >>
-	if ((g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bAllowMultipleInstances && (!(iFlags&CLF_TRY_2REUSE_PREV_INSTANCE))) || (iFlags&CLF_FORCE_NEW_INSTANCE))
+	if (g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bAllowMultipleInstances && !(iFlags & CLF_REUSE_PREV_INSTANCE))
+		bOneInstance = false;
+
+	if (iFlags & CLF_FORCE_NEW_INSTANCE)
 		bOneInstance = false;
 	// vds: <<
 
@@ -363,7 +373,8 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 			startupDirs, 
 			startupCmds, 
 			nMultiStartSleep, 
-			strDbgCmdLine);
+			strDbgCmdLine,
+			iFlags);
 
 		::PostMessage(wndMain.m_hWnd, WM_SEND_DDE_COMMAND, 0, reinterpret_cast<LPARAM>(rebuildCommandLine.c_str()));
 	}
