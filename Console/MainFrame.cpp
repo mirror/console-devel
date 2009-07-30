@@ -2773,7 +2773,27 @@ LRESULT MainFrame::OnDdeExecute(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOO
 			MessageBox(buf, _T("Received Message"), MB_OK);
 #endif
 
-			if (g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bAllowMultipleInstances)
+			wstring			strConfigFile(L"");
+			wstring			strWindowTitle(L"");
+			vector<wstring>	startupTabs;
+			vector<wstring>	startupDirs;
+			vector<wstring>	startupCmds;
+			int				nMultiStartSleep = 0;
+			wstring			strDbgCmdLine(L"");
+			WORD			iFlags = 0;
+
+			ParseCommandLine(
+				lpstrCmdLine, 
+				strConfigFile, 
+				strWindowTitle, 
+				startupTabs, 
+				startupDirs, 
+				startupCmds, 
+				nMultiStartSleep, 
+				strDbgCmdLine,
+				iFlags);
+
+			if ((g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bAllowMultipleInstances && !(iFlags & CLF_REUSE_PREV_INSTANCE)) || iFlags & CLF_FORCE_NEW_INSTANCE)
 			{
 				// If you allow multiple instance don't let explorer reuse an existing one.
 				TCHAR module[512];
@@ -2793,26 +2813,6 @@ LRESULT MainFrame::OnDdeExecute(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOO
 			}
 			else
 			{
-				wstring			strConfigFile(L"");
-				wstring			strWindowTitle(L"");
-				vector<wstring>	startupTabs;
-				vector<wstring>	startupDirs;
-				vector<wstring>	startupCmds;
-				int				nMultiStartSleep = 0;
-				wstring			strDbgCmdLine(L"");
-				WORD			iFlags = 0;
-
-				ParseCommandLine(
-					lpstrCmdLine, 
-					strConfigFile, 
-					strWindowTitle, 
-					startupTabs, 
-					startupDirs, 
-					startupCmds, 
-					nMultiStartSleep, 
-					strDbgCmdLine,
-					iFlags);
-
 				TabSettings &tabSettings = g_settingsHandler->GetTabSettings();
 				if (!startupTabs.size() && tabSettings.tabDataVector.size()) {
 					startupTabs.push_back(tabSettings.tabDataVector[0]->strTitle);

@@ -11,7 +11,7 @@ import "ShObjIdl.idl";
 [
 	uuid(2AC61119-8D7D-43DA-BD9E-9310BFF8977F),
 	version(1.0),
-	helpstring("Console2 ExplorerIntegration 1.0 Type Library")
+	helpstring("Console ExplorerIntegration 1.0 Type Library")
 ]
 library ExplorerIntegrationLib
 {
