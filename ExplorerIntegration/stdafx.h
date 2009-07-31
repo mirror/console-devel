@@ -77,7 +77,7 @@ using namespace boost::multi_index;
 extern syncCriticalSection					g_oSync;			///> object to synchronize access to global data
 extern shared_ptr<SettingsHandler>			g_settingsHandler;
 extern vector< shared_ptr<CTabSettings> >	g_vTabs;
-
+extern HANDLE								hConfigChanged;
 
 //////////////////////////////////////////////////////////////////////////
 // global methods

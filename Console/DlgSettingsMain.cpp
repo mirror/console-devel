@@ -11,6 +11,7 @@
 #include "DlgSettingsMouse.h"
 #include "DlgSettingsTabs.h"
 #include "DlgSettingsMain.h"
+#include "../shared/Constants.h"
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -83,6 +84,15 @@ LRESULT DlgSettingsMain::OnCloseCmd(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndC
 			g_settingsHandler->SetUserDataDir((m_checkUserDataDir.GetCheck() == 1) ? SettingsHandler::dirTypeUser : SettingsHandler::dirTypeExe);
 		}
 		m_pSettingsDocument->save(CComVariant(g_settingsHandler->GetSettingsFileName().c_str()));
+
+		// notify explorer integration object about configuration change
+		HANDLE	hConfigChange = CreateEvent(NULL,FALSE,FALSE,szConfigNotifyEventName);
+		if(hConfigChange)
+		{
+			if(GetLastError()==ERROR_ALREADY_EXISTS)
+				SetEvent(hConfigChange);	///< there is no sense to notify if nobody is listening
+			CloseHandle(hConfigChange);
+		}
 	}
 
 	EndDialog(wID);
