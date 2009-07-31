@@ -195,16 +195,23 @@ STDMETHODIMP CContextMenuHandler::QueryContextMenu(HMENU hmenu,UINT indexMenu,UI
 
 	MENUITEMINFO ii;
 	DWORD lastId = idCmdFirst;
+	wstring	sItemName;
+
+	// synchronization
+	syncAutoLock	oLock(g_oSync);			// This lock is REQUIRED to protect shared configuration access
 
 	if (g_settingsHandler->GetBehaviorSettings().shellSettings.bRunConsoleMenItem)
 	{
+		// get item name
+		sItemName = g_settingsHandler->GetInternationalizationSettings().strExplorerMenuRunItem;
+		if(sItemName.size()<=0) sItemName=szItemRunConsole;
 		// Fill main menu first item info
 		memset(&ii,0,sizeof(MENUITEMINFO));
 		ii.cbSize = sizeof(MENUITEMINFO);
 		ii.fMask = MIIM_CHECKMARKS|MIIM_STRING|MIIM_ID;
 		ii.wID = idCmdFirst + eMC_RunConsole;
-		ii.dwTypeData = szItemRunConsole;
-		ii.cch = _tcslen(szItemRunConsole);
+		ii.dwTypeData = const_cast<LPTSTR>(sItemName.c_str());
+		ii.cch = sItemName.size();
 		ii.hbmpChecked = (HBITMAP)LoadImage(_AtlBaseModule.GetResourceInstance(),MAKEINTRESOURCE(IDB_MENU_PICTURE),IMAGE_BITMAP,0,0,LR_LOADTRANSPARENT);
 		ii.hbmpUnchecked = (HBITMAP)LoadImage(_AtlBaseModule.GetResourceInstance(),MAKEINTRESOURCE(IDB_MENU_PICTURE),IMAGE_BITMAP,0,0,LR_LOADTRANSPARENT);
 		// Insert menu item
@@ -218,8 +225,6 @@ STDMETHODIMP CContextMenuHandler::QueryContextMenu(HMENU hmenu,UINT indexMenu,UI
 		HMENU hSubMenu = CreateMenu();
 		if (!hSubMenu)
 			return MAKE_HRESULT(SEVERITY_SUCCESS, 0, USHORT(0));
-		// synchronization
-		syncAutoLock	oLock(g_oSync);			// This lock is REQUIRED to protect shared configuration access
 
 		// Create submenu
 		DWORD i, lim;
@@ -241,12 +246,15 @@ STDMETHODIMP CContextMenuHandler::QueryContextMenu(HMENU hmenu,UINT indexMenu,UI
 
 			lastId = ii.wID;
 		}
+		// get item name
+		sItemName = g_settingsHandler->GetInternationalizationSettings().strExplorerMenuRunWithItem;
+		if(sItemName.size()<=0) sItemName=szItemRunConsoleWithTab;
 		// Fill main menu item info
 		memset(&ii,0,sizeof(MENUITEMINFO));
 		ii.cbSize = sizeof(MENUITEMINFO);
 		ii.fMask = MIIM_CHECKMARKS|MIIM_STRING|MIIM_SUBMENU;
-		ii.dwTypeData = szItemRunConsoleWithTab;
-		ii.cch = _tcslen(szItemRunConsoleWithTab);
+		ii.dwTypeData = const_cast<LPTSTR>(sItemName.c_str());
+		ii.cch = sItemName.size();
 		ii.hSubMenu = hSubMenu;
 		ii.hbmpChecked = (HBITMAP)LoadImage(_AtlBaseModule.GetResourceInstance(),MAKEINTRESOURCE(IDB_MENU_PICTURE),IMAGE_BITMAP,0,0,LR_LOADTRANSPARENT);
 		ii.hbmpUnchecked = (HBITMAP)LoadImage(_AtlBaseModule.GetResourceInstance(),MAKEINTRESOURCE(IDB_MENU_PICTURE),IMAGE_BITMAP,0,0,LR_LOADTRANSPARENT);

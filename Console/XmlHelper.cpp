@@ -23,7 +23,24 @@ HRESULT XmlHelper::OpenXmlDocument(const wstring& strFilename, CComPtr<IXMLDOMDo
 	if (FAILED(hr) || (pXmlDocument.p == NULL)) return E_FAIL;
 
 	hr = pXmlDocument->load(CComVariant(strFilename.c_str()), &bLoadSuccess);
-	if (FAILED(hr) || (!bLoadSuccess)) return E_FAIL;
+	if (FAILED(hr) || (!bLoadSuccess))
+	{
+/*
+		// get XMLError for debug
+		CComPtr<IXMLDOMParseError>	pXmlError;
+		if(SUCCEEDED(pXmlDocument->get_parseError(&pXmlError)))
+		{
+			BSTR	sReason;
+			LONG	iLine,iPos;
+			pXmlError->get_line(&iLine);
+			pXmlError->get_linepos(&iPos);
+			pXmlError->get_reason(&sReason);
+			iPos += iLine;
+			if(sReason) SysFreeString(sReason);
+		}
+*/
+		return E_FAIL;
+	}
 
 /*
 	if (FAILED(hr) || (!bLoadSuccess))

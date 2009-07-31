@@ -2013,6 +2013,83 @@ void TabSettings::SetDefaults(const wstring& defaultShell, const wstring& defaul
 
 //////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////
+
+InternationalizationSettings::InternationalizationSettings():
+strExplorerMenuRunItem(L"Run Console"),
+strExplorerMenuRunWithItem(L"Run Console Tab")
+{
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+bool InternationalizationSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+{
+	CComPtr<IXMLDOMElement>	pInternationalizationElement;
+
+	if(FAILED(XmlHelper::GetDomElement(pSettingsRoot, CComBSTR(L"internationalization"), pInternationalizationElement)))
+	{
+		// If the section is not present create it.
+		CComPtr<IXMLDOMDocument> pSettingsDoc;
+		pSettingsRoot->get_ownerDocument(&pSettingsDoc);
+
+		if(FAILED(pSettingsDoc->createElement(CComBSTR(L"internationalization"), &pInternationalizationElement))) return false;
+
+		CComPtr<IXMLDOMNode>	pInternationalizationElementOut;
+		pSettingsRoot->appendChild(pInternationalizationElement,&pInternationalizationElementOut);
+		SettingsBase::AddTextNode(pSettingsDoc, pInternationalizationElement, CComBSTR(L"\n\t"));
+		CComPtr<IXMLDOMElement>	pTRoot;
+		pTRoot = pSettingsRoot;
+		SettingsBase::AddTextNode(pSettingsDoc, pTRoot, CComBSTR(L"\n"));
+	}
+
+	XmlHelper::GetAttribute(pInternationalizationElement, CComBSTR(L"current_language"), strSelectedLanguage, wstring(L"english"));
+
+	// load strings for selected language
+	CComPtr<IXMLDOMElement>	pLanguageElement;
+	CComPtr<IXMLDOMElement>	pElement;
+	if(FAILED(XmlHelper::GetDomElement(pInternationalizationElement, CComBSTR(strSelectedLanguage.c_str()), pLanguageElement))) return true;	///< no such language - use default strings
+
+	// explorer menu items
+	if(SUCCEEDED(XmlHelper::GetDomElement(pLanguageElement, CComBSTR(L"explorer_menu_run"), pElement)))
+		XmlHelper::GetAttribute(pElement, CComBSTR(L"title"), strExplorerMenuRunItem, strExplorerMenuRunItem); pElement=NULL;
+	if(SUCCEEDED(XmlHelper::GetDomElement(pLanguageElement, CComBSTR(L"explorer_menu_run_with"), pElement)))
+		XmlHelper::GetAttribute(pElement, CComBSTR(L"title"), strExplorerMenuRunWithItem, strExplorerMenuRunWithItem); pElement=NULL;
+
+	return true;
+}
+
+bool InternationalizationSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+{
+	CComPtr<IXMLDOMElement>	pInternationalizationElement;
+
+	if (FAILED(XmlHelper::GetDomElement(pSettingsRoot, CComBSTR(L"internationalization"), pInternationalizationElement))) {
+		return false;
+	}
+
+	XmlHelper::SetAttribute(pInternationalizationElement, CComBSTR(L"current_language"), strSelectedLanguage);
+
+	// do not update strings - thay are used read only
+
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+InternationalizationSettings& InternationalizationSettings::operator=(const InternationalizationSettings& other)
+{
+	strSelectedLanguage = other.strSelectedLanguage;
+	strExplorerMenuRunItem = other.strExplorerMenuRunItem;
+	strExplorerMenuRunWithItem = other.strExplorerMenuRunWithItem;
+
+	return *this;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -2032,6 +2109,7 @@ SettingsHandler::SettingsHandler()
 , m_hotKeys()
 , m_mouseSettings()
 , m_tabSettings()
+, m_internationalizationSettings()
 {
 }
 
@@ -2134,6 +2212,8 @@ bool SettingsHandler::LoadSettings(const wstring& strSettingsFileName)
 	m_tabSettings.SetDefaults(m_consoleSettings.strShell, m_consoleSettings.strInitialDir);
 	m_tabSettings.Load(m_pSettingsRoot);
 
+	m_internationalizationSettings.Load(m_pSettingsRoot);
+
 	return true;
 }
 
@@ -2150,6 +2230,8 @@ bool SettingsHandler::SaveSettings()
 	m_hotKeys.Save(m_pSettingsRoot);
 	m_mouseSettings.Save(m_pSettingsRoot);
 	m_tabSettings.Save(m_pSettingsRoot);
+
+	m_internationalizationSettings.Save(m_pSettingsRoot);
 
 	HRESULT hr = m_pSettingsDocument->save(CComVariant(m_strSettingsFileName.c_str()));
 

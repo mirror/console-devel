@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <settings>
 	<console change_refresh="10" refresh="100" rows="25" columns="80" buffer_rows="40" buffer_columns="120" shell="" init_dir="" start_hidden="0" save_size="0">
 		<colors>

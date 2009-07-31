@@ -673,6 +673,29 @@ private:
 
 
 //////////////////////////////////////////////////////////////////////////////
+
+// graynm: >>
+struct InternationalizationSettings : public SettingsBase
+{
+	InternationalizationSettings();
+
+	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+
+	InternationalizationSettings& operator=(const InternationalizationSettings& other);
+
+	wstring		strSelectedLanguage;	///< if empty - english
+
+	wstring		strExplorerMenuRunItem;
+	wstring		strExplorerMenuRunWithItem;
+};
+
+// graynm: <<
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
@@ -711,6 +734,8 @@ class SettingsHandler
 		MouseSettings& GetMouseSettings() { return m_mouseSettings; }
 		TabSettings& GetTabSettings() { return m_tabSettings; }
 
+		InternationalizationSettings& GetInternationalizationSettings() { return m_internationalizationSettings; }
+
 	private:
 
 		CComPtr<IXMLDOMDocument>	m_pSettingsDocument;
@@ -730,6 +755,8 @@ class SettingsHandler
 		MouseSettings		m_mouseSettings;
 
 		TabSettings			m_tabSettings;
+
+		InternationalizationSettings	m_internationalizationSettings;
 };
 
 //////////////////////////////////////////////////////////////////////////////
