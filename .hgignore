@@ -27,3 +27,7 @@ CVS
 .svn
 cvs\*.*
 .svn\*.*
+
+# ignore generated files
+*_i.c
+*_i.h
