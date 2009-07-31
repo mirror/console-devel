@@ -105,23 +105,13 @@ int CContextMenuHandler::LoadConfig()
 	}
 	else f_log("Cannot open global config key");
 
-/*
-	// load tab list for this user
-	if(RegOpenKeyEx(HKEY_CURRENT_USER,szConfigPath,0,KEY_READ,&hK)!=ERROR_SUCCESS) {f_log("Cannot open user config key");return E_FAIL;}
-	// get tabs
-	for(iInd=0,iSize=1024*sizeof(TCHAR);RegEnumKeyEx(hK,iInd,tbuf,&iSize,NULL,NULL,NULL,&ftLastWrite)==ERROR_SUCCESS;++iInd,iSize=1024*sizeof(TCHAR))
-	{// parse tabs
-		vTabs.push_back(tbuf);
-
-#ifdef DEBUG_TO_LOG_FILES
-		char	_tbuf[1024];
-		sprintf_s(_tbuf,1024,"Tab: %S",tbuf);
-		f_log(_tbuf);
-#endif
-	}
-	// close key
-	RegCloseKey(hK);
-*/
+	// reload global config if required
+	if(hConfigChanged)
+		if(WaitForSingleObject(hConfigChanged,0)==WAIT_OBJECT_0)
+		{
+			LoadConsoleSettings();
+//			::MessageBox(NULL,L"Reloading console settings",L"Info",MB_ICONINFORMATION|MB_OK);		// DEBUG
+		}
 
 	return S_OK;
 }
@@ -206,7 +196,8 @@ STDMETHODIMP CContextMenuHandler::QueryContextMenu(HMENU hmenu,UINT indexMenu,UI
 	MENUITEMINFO ii;
 	DWORD lastId = idCmdFirst;
 
-	if (g_settingsHandler->GetBehaviorSettings().shellSettings.bRunConsoleMenItem) {
+	if (g_settingsHandler->GetBehaviorSettings().shellSettings.bRunConsoleMenItem)
+	{
 		// Fill main menu first item info
 		memset(&ii,0,sizeof(MENUITEMINFO));
 		ii.cbSize = sizeof(MENUITEMINFO);
@@ -222,10 +213,13 @@ STDMETHODIMP CContextMenuHandler::QueryContextMenu(HMENU hmenu,UINT indexMenu,UI
 		lastId = ii.wID;
 	}
 
-	if (g_settingsHandler->GetBehaviorSettings().shellSettings.bRunConsoleTabMenuItem) {
+	if (g_settingsHandler->GetBehaviorSettings().shellSettings.bRunConsoleTabMenuItem)
+	{
 		HMENU hSubMenu = CreateMenu();
 		if (!hSubMenu)
 			return MAKE_HRESULT(SEVERITY_SUCCESS, 0, USHORT(0));
+		// synchronization
+		syncAutoLock	oLock(g_oSync);			// This lock is REQUIRED to protect shared configuration access
 
 		// Create submenu
 		DWORD i, lim;

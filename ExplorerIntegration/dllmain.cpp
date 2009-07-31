@@ -4,6 +4,7 @@
 #include "resource.h"
 #include "ExplorerIntegration_i.h"
 #include "dllmain.h"
+#include "../shared/Constants.h"
 
 //////////////////////////////////////////////////////////////////////////
 // constants
@@ -12,7 +13,9 @@ const TCHAR	szConfigFile[] = L"console.xml";
 
 CExplorerIntegrationModule _AtlModule;
 HINSTANCE	hModuleInst = NULL;
+HANDLE		hConfigChanged = NULL;		///< this event is set when configuration in console.xml is changed
 
+// protected shared configuration data
 syncCriticalSection					g_oSync;
 shared_ptr<SettingsHandler>			g_settingsHandler;
 vector< shared_ptr<CTabSettings> >	g_vTabs;
@@ -47,10 +50,16 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpRes
 
 	// on start load settings
 	if(dwReason==DLL_PROCESS_ATTACH)
-	{
+	{// initialization
 		// create global objects
-		g_settingsHandler.reset(new SettingsHandler());
+		if(!hConfigChanged)
+			hConfigChanged=CreateEvent(NULL,FALSE,FALSE,szConfigNotifyEventName);
+		// load settings
 		LoadConsoleSettings();
+	}
+	else if(dwReason==DLL_PROCESS_DETACH)
+	{// cleanup
+		if(hConfigChanged) CloseHandle(hConfigChanged);
 	}
 
 	return _AtlModule.DllMain(dwReason, lpReserved); 
@@ -65,6 +74,12 @@ void LoadConsoleSettings()
 
 	// clear previous settings
 	g_vTabs.clear();
+	g_settingsHandler.reset(new SettingsHandler());
+	if(!g_settingsHandler)
+	{// cannot create settings object, exit
+		TRACE(_T("[") _T(__FUNCTION__) _T("] Cannot create settings object"));
+		return;
+	}
 
 	// load settings from config file
 	if (!g_settingsHandler->LoadSettings(Helpers::ExpandEnvironmentStrings(wstring(szConfigFile))))
