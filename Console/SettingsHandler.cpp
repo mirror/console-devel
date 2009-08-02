@@ -1229,6 +1229,7 @@ void ShellSettings::IntegrateConsoleWithExplorer(bool integrate)
 		SetKeyValue(_T("*\\shellex\\ContextMenuHandlers\\Console"), _T("{88076FF3-A8B5-4059-AB7D-9D7DEF3792FD}"));
 		SetKeyValue(_T("Directory\\shellex\\ContextMenuHandlers\\Console"), _T("{88076FF3-A8B5-4059-AB7D-9D7DEF3792FD}"));
 		SetKeyValue(_T("Directory\\Background\\shellex\\ContextMenuHandlers\\Console"), _T("{88076FF3-A8B5-4059-AB7D-9D7DEF3792FD}"));
+		SetKeyValue(_T("Drive\\shellex\\ContextMenuHandlers\\Console"), _T("{88076FF3-A8B5-4059-AB7D-9D7DEF3792FD}"));
 
 		HMODULE hExplorerIntegration = LoadLibrary(_T("ExplorerIntegration.dll"));
 		if (!hExplorerIntegration)
@@ -1245,6 +1246,7 @@ void ShellSettings::IntegrateConsoleWithExplorer(bool integrate)
 		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("*\\shellex\\ContextMenuHandlers\\Console"));
 		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("Directory\\shellex\\ContextMenuHandlers\\Console"));
 		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("Directory\\Background\\shellex\\ContextMenuHandlers\\Console"));
+		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("Drive\\shellex\\ContextMenuHandlers\\Console"));
 
 		HMODULE hExplorerIntegration = LoadLibrary(_T("ExplorerIntegration.dll"));
 		if (!hExplorerIntegration)
