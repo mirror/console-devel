@@ -14,6 +14,12 @@
 #include <sys/stat.h> // vds:
 
 
+const unsigned int CLF_REUSE_PREV_INSTANCE = 0x0001;
+const unsigned int CLF_FORCE_NEW_INSTANCE = 0x0002;
+const unsigned int CLF_REUSE_PREV_TAB = 0x0004;
+const unsigned int CLF_FORCE_NEW_TAB = 0x0008;
+
+
 //////////////////////////////////////////////////////////////////////////////
 
 
@@ -161,6 +167,16 @@ void ParseCommandLine
 			// force creation of new console instance, mutual exclusive with -reuse
 			iFlags |= CLF_FORCE_NEW_INSTANCE;
 		}
+		else if (wstring(argv[i]) == wstring(L"-reuse-tab"))
+		{
+			// reuse existing console instance if running, mutual exclusive with -new
+			iFlags |= CLF_REUSE_PREV_TAB;
+		}
+		else if (wstring(argv[i]) == wstring(L"-new-tab"))
+		{
+			// force creation of new console instance, mutual exclusive with -reuse
+			iFlags |= CLF_FORCE_NEW_TAB;
+		}
 		// TODO: not working yet, need to investigate
 #if 0
 		else if (wstring(argv[i]) == wstring(L"-dbg"))
@@ -258,6 +274,12 @@ wstring BuildCommandLine(
 
 	if (iFlags & CLF_FORCE_NEW_INSTANCE)
 		ret += _T(" -new");
+
+	if (iFlags & CLF_REUSE_PREV_TAB)
+		ret += _T(" -reuse-tab");
+
+	if (iFlags & CLF_FORCE_NEW_TAB)
+		ret += _T(" -new-tab");
 
 	return ret;
 }

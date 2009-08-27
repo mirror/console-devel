@@ -2836,7 +2836,16 @@ LRESULT MainFrame::OnDdeExecute(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOO
 							startupCmd = startupCmds[j];
 
 						ConsoleView *existingTab = NULL;
-						if (g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bReuseTab)
+
+						bool bReuseTab = g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bReuseTab;
+
+						if (iFlags & CLF_REUSE_PREV_TAB)
+							bReuseTab = true;
+
+						if (iFlags & CLF_FORCE_NEW_TAB)
+							bReuseTab = false;
+
+						if (bReuseTab)
 							existingTab = LookupTab(tabData, startupDir);
 
 						if (existingTab) {
