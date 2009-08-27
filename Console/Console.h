@@ -6,8 +6,10 @@ extern shared_ptr<ImageHandler>		g_imageHandler;
 
 //////////////////////////////////////////////////////////////////////////////
 /// Flags received from command line
-#define CLF_REUSE_PREV_INSTANCE			0x0001	///< if another instance of console is already running open tabs in it even if "allow multiple instances" is enabled
-#define CLF_FORCE_NEW_INSTANCE			0x0002	///< start another instance of console even if "allow multiple instances" is disabled
+extern const unsigned int CLF_REUSE_PREV_INSTANCE;		// if another instance of console is already running open tabs in it even if "allow multiple instances" is enabled
+extern const unsigned int CLF_FORCE_NEW_INSTANCE;		// start another instance of console even if "allow multiple instances" is disabled
+extern const unsigned int CLF_REUSE_PREV_TAB;			// ...
+extern const unsigned int CLF_FORCE_NEW_TAB;			// create another tab in console even if "reuse tab" is on
 
 //////////////////////////////////////////////////////////////////////////////
 
