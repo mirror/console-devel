@@ -31,5 +31,9 @@ cvs\*.*
 # ignore generated files
 *_i.c
 *_i.h
-help/Console.chm
-contrib/boost/*
+help\Console.chm
+
+# ignore boost
+contrib\boost\*\
+contrib\boost\*.*
+
