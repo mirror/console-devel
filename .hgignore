@@ -31,3 +31,4 @@ cvs\*.*
 # ignore generated files
 *_i.c
 *_i.h
+help/Console.chm
