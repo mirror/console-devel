@@ -13,12 +13,12 @@
 #include <sys/types.h> // vds:
 #include <sys/stat.h> // vds:
 
-
+// vds: >>
 const unsigned int CLF_REUSE_PREV_INSTANCE = 0x0001;
 const unsigned int CLF_FORCE_NEW_INSTANCE = 0x0002;
 const unsigned int CLF_REUSE_PREV_TAB = 0x0004;
 const unsigned int CLF_FORCE_NEW_TAB = 0x0008;
-
+// vds: <<
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -103,7 +103,7 @@ void ParseCommandLine
 	vector<wstring>& startupCmds, 
 	int& nMultiStartSleep, 
 	wstring& strDbgCmdLine,
-	WORD& iFlags
+	WORD& iFlags // vds
 )
 {
 	int						argc = 0;
@@ -157,6 +157,7 @@ void ParseCommandLine
 			nMultiStartSleep = _wtoi(argv[i]);
 			if (nMultiStartSleep < 0) nMultiStartSleep = 500;
 		}
+		// vds: >>
 		else if (wstring(argv[i]) == wstring(L"-reuse"))
 		{
 			// reuse existing console instance if running, mutual exclusive with -new
@@ -187,6 +188,7 @@ void ParseCommandLine
 			strDbgCmdLine = argv[i];
 		}
 #endif
+		// vds: <<
 	}
 
 	// make sure that startupDirs and startupCmds are at least as big as startupTabs
@@ -197,10 +199,6 @@ void ParseCommandLine
 //////////////////////////////////////////////////////////////////////////////
 
 
-//////////////////////////////////////////////////////////////////////////////
-#ifdef USE_COPYDATA_MSG
-bool SendCreateNewTabsToAnotherInstance( vector<wstring> &startupTabs, vector<wstring> &startupDirs, vector<wstring> &startupCmds, HWND hPrevConsole );
-#endif
 //////////////////////////////////////////////////////////////////////////
 
 // vds: >>
@@ -296,6 +294,7 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 	HANDLE hOneInstanceMutex = CreateMutex(NULL, FALSE, _T("ConsoleOnInstanceMutex"));
 	DWORD oneInstanceResult = GetLastError();
 	bool bOneInstance = oneInstanceResult == ERROR_ALREADY_EXISTS; // vds:
+	HWND hPrevConsole = FindWindow(MainFrame::GetWndClassInfo().m_wc.lpszClassName, NULL);
 	// vds: <<
 
 	CMessageLoop theLoop;
@@ -308,7 +307,7 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 	vector<wstring>	startupCmds;
 	int				nMultiStartSleep = 0;
 	wstring			strDbgCmdLine(L"");
-	WORD			iFlags = 0;
+	WORD			iFlags = 0; // vds
 
 	ParseCommandLine(
 		lpstrCmdLine, 
@@ -319,36 +318,14 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 		startupCmds, 
 		nMultiStartSleep, 
 		strDbgCmdLine,
-		iFlags);
-
-#ifdef USE_COPYDATA_MSG		///> use WM_COPYDATA message to communicate with running instance
-	// reuse running instance
-	if(iFlags&CLF_TRY_2REUSE_PREV_INSTANCE)
-	{
-		// search for running instance of console
-		HWND	hPrevConsole = FindWindow(MainFrame::GetWndClassInfo().m_wc.lpszClassName,NULL);
-		if(hPrevConsole)
-		{// found! transfer tab create commands to it and quit
-			// check tabs
-			if(startupTabs.size()==0) return 0;
-			// Activation can be much simpler 8-)
-			::SetForegroundWindow(hPrevConsole);
-			// enable activation of previous instance window by itself
-			DWORD	iProcID;
-			GetWindowThreadProcessId(hPrevConsole,&iProcID);
-			AllowSetForegroundWindow(iProcID);
-			// send create tab commands
-			if(SendCreateNewTabsToAnotherInstance(startupTabs, startupDirs, startupCmds, hPrevConsole))
-				return 0;	///< success, otherwise start as usual
-		}
-	}
-#endif
+		iFlags); // vds
 
 	if (strConfigFile.length() == 0)
 	{
-		strConfigFile = wstring(L"console.xml");
+		strConfigFile = wstring(L"console.xml"); // vds
+//		strConfigFile = wstring(L"%APPDATA%\Console\console.xml");
 //		strConfigFile = Helpers::GetModulePath(NULL) + wstring(L"console.xml");
-//		strConfigFile = wstring(::_wgetenv(L"APPDATA")) + wstring(L"\\Console\\console.xml");
+//		strConfigFile = wstring(::_wgetenv(L"APPDATA")) + wstring(L"\\Console\\console.xml"); // vds
 	}
 
 	if (!g_settingsHandler->LoadSettings(Helpers::ExpandEnvironmentStrings(strConfigFile)))
@@ -364,12 +341,11 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 		bOneInstance = false;
 	// vds: <<
 
-
 	// create main window
 	NoTaskbarParent noTaskbarParent;
 	MainFrame wndMain(strWindowTitle, startupTabs, startupDirs, startupCmds, nMultiStartSleep, bOneInstance, strDbgCmdLine); // vds:
 
-	if (!g_settingsHandler->GetAppearanceSettings().stylesSettings.bTaskbarButton && !bOneInstance)
+	if (!g_settingsHandler->GetAppearanceSettings().stylesSettings.bTaskbarButton && !bOneInstance) // vds:
 	{
 		noTaskbarParent.Create(NULL);
 	}
@@ -377,7 +353,7 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 	if (wndMain.CreateEx(noTaskbarParent.m_hWnd) == NULL)
 	{
 		ATLTRACE(_T("Main window creation failed!\n"));
-		return 0;
+		return 1;
 	}
 
 	// vds: >>
@@ -398,7 +374,19 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 			strDbgCmdLine,
 			iFlags);
 
-		::PostMessage(wndMain.m_hWnd, WM_SEND_DDE_COMMAND, 0, reinterpret_cast<LPARAM>(rebuildCommandLine.c_str()));
+#ifdef USE_COPYDATA_MSG
+		// Search for running instance of console
+		if (hPrevConsole) {
+			COPYDATASTRUCT stCopyData;
+			stCopyData.dwData = eEC_NewTab;
+			stCopyData.cbData = (rebuildCommandLine.size() + 1) * sizeof(wchar_t);
+			stCopyData.lpData = reinterpret_cast<void*>(const_cast<wchar_t*>(rebuildCommandLine.c_str()));
+
+			SendMessage(hPrevConsole, WM_COPYDATA, 0, (LPARAM)(LPVOID)&stCopyData);
+		}
+#else
+		::PostMessage(wndMain.m_hWnd, WM_SEND_DDE_COMMAND, reinterpret_cast<WPARAM>(hPrevConsole), reinterpret_cast<LPARAM>(rebuildCommandLine.c_str()));
+#endif
 	}
 	// vds: <<
 	int nRet = theLoop.Run();
@@ -452,61 +440,3 @@ int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lp
 }
 
 //////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////
-#ifdef USE_COPYDATA_MSG
-bool SendCreateNewTabsToAnotherInstance( vector<wstring> &startupTabs, vector<wstring> &startupDirs, vector<wstring> &startupCmds, HWND hPrevConsole )
-{
-	// walk through tabs
-	size_t			iSize;
-	wchar_t			*pStrs,tbuf[4*_MAX_PATH];
-	vector<BYTE>	aData(sizeof(ECNewTabParams)+3);
-	COPYDATASTRUCT	stCopyData;
-	ECNewTabParams	*pTabParams;
-	WORD			iTabNameSize,iStartDirSize,iStartCmdSize;
-	for (size_t tabIndex = 0; tabIndex < startupTabs.size(); ++tabIndex)
-	{
-		// convert relative dir to absolute if required
-		iStartDirSize = startupDirs[tabIndex].size();
-		if(_wfullpath(tbuf,startupDirs[tabIndex].c_str(),4*_MAX_PATH-2))
-			startupDirs[tabIndex]=tbuf;
-		// calculate size of parameters
-		iSize = sizeof(ECNewTabParams);
-		iSize += sizeof(wchar_t) * (iTabNameSize=(1+startupTabs[tabIndex].size()));
-		iSize += sizeof(wchar_t) * (iStartDirSize=(1+startupDirs[tabIndex].size()));
-		iSize += sizeof(wchar_t) * (iStartCmdSize=(1+startupCmds[tabIndex].size()));
-		// reallocate array
-		if(aData.size()<(iSize+3)) aData.resize(iSize+3);
-		// fill header
-		pTabParams = (ECNewTabParams*)&(aData.front());
-		pTabParams->nTabNameSize = iTabNameSize;
-		pTabParams->nStartDirSize = iStartDirSize;
-		pTabParams->nStartCmdSize = iStartCmdSize;
-		// fill copydata
-		stCopyData.dwData = eEC_NewTab;
-		stCopyData.cbData = iSize;
-		stCopyData.lpData = pTabParams;
-		// copy strings
-		iSize -= sizeof(ECNewTabParams);
-		pStrs = pTabParams->szTabName;
-		if(iTabNameSize>0) startupTabs[tabIndex]._Copy_s(pStrs,iSize/sizeof(wchar_t),iTabNameSize-1);
-		pStrs[iTabNameSize] = 0;
-		iSize -= iTabNameSize*sizeof(wchar_t);
-		pStrs += iTabNameSize;
-		if(iStartDirSize>0) startupDirs[tabIndex]._Copy_s(pStrs,iSize/sizeof(wchar_t),iStartDirSize-1);
-		pStrs[iStartDirSize] = 0;
-		iSize -= iStartDirSize*sizeof(wchar_t);
-		pStrs += iStartDirSize;
-		if(iStartCmdSize>0) startupCmds[tabIndex]._Copy_s(pStrs,iSize/sizeof(wchar_t),iStartCmdSize-1);
-		pStrs[iStartCmdSize] = 0;
-		// send command
-		if(!SendMessage(hPrevConsole,WM_COPYDATA,0,(LPARAM)(LPVOID)&stCopyData))
-		{
-//			MessageBox(NULL,L"Cannot send message to another instance",L"Error",MB_OK|MB_ICONERROR);
-			return false;
-		}
-	}
-	// success
-	return true;
-}
-#endif

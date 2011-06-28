@@ -64,6 +64,7 @@ class ConsoleView
 			MESSAGE_HANDLER(WM_MOUSEACTIVATE, OnMouseActivate)
 			MESSAGE_HANDLER(WM_TIMER, OnTimer)
 			MESSAGE_HANDLER(WM_INPUTLANGCHANGEREQUEST, OnInputLangChangeRequest)
+			MESSAGE_HANDLER(WM_INPUTLANGCHANGE, OnInputLangChange)
 			MESSAGE_HANDLER(WM_DROPFILES, OnDropFiles)
 			MESSAGE_HANDLER(UM_UPDATE_CONSOLE_VIEW, OnUpdateConsoleView)
 			COMMAND_RANGE_HANDLER(ID_SCROLL_UP, ID_SCROLL_ALL_RIGHT, OnScrollCommand)
@@ -74,7 +75,7 @@ class ConsoleView
 //		LRESULT CommandHandler(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 //		LRESULT NotifyHandler(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/)
 
-		LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+		LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/);
 		LRESULT OnClose(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 		LRESULT OnEraseBkgnd(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled);
 		LRESULT OnPaint(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
@@ -89,6 +90,7 @@ class ConsoleView
 		LRESULT OnMouseActivate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/);
 		LRESULT OnTimer(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 		LRESULT OnInputLangChangeRequest(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
+		LRESULT OnInputLangChange(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 		LRESULT OnDropFiles(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 		LRESULT OnUpdateConsoleView(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 
@@ -116,20 +118,28 @@ class ConsoleView
 		void SetResizing(bool bResizing);
 		void SetActive(bool bActive);
 		void SetTitle(const CString& strTitle);
+		const CString& GetTitle() const { return m_strTitle; }
 
 		CString GetConsoleCommand();
-		const CString& GetTitle() const { return m_strTitle; }
 		CIcon& GetIcon(bool bBigIcon = true) { return bBigIcon ? bigIcon : smallIcon; }
 
 		void Copy(const CPoint* pPoint = NULL);
 		void ClearSelection();
 		void Paste();
 
+		bool CanCopy() const { return m_selectionHandler->GetState() == SelectionHandler::selstateSelected; }
+		bool CanClearSelection() const { return m_selectionHandler->GetState() > SelectionHandler::selstateNoSelection; }
+		bool CanPaste() const { return (m_selectionHandler->GetState() == SelectionHandler::selstateNoSelection) && (::IsClipboardFormatAvailable(CF_UNICODETEXT) || ::IsClipboardFormatAvailable(CF_TEXT) || ::IsClipboardFormatAvailable(CF_OEMTEXT)) ; }
+
 		void DumpBuffer();
 		void InitializeScrollbars();
 
+		const CString& GetExceptionMessage() const { return m_exceptionMessage; }
+
 		bool IsWorkingDirFit(wstring workingDir); // vds: Reuse exising tab
 		bool HasChildProcesses(); // vds: Reuse exising tab
+
+		wstring GetWorkingDir(); // vds: New tab with same working dir
 
 	private:
 
@@ -160,6 +170,7 @@ class ConsoleView
 
 		COORD GetConsoleCoord(const CPoint& clientPoint);
 
+
 	private:
 
 		MainFrame& m_mainFrame;
@@ -185,6 +196,7 @@ class ConsoleView
 		int		m_nHScrollWidth;
 
 		CString	m_strTitle;
+		CString	m_strUser;
 
 		CIcon	bigIcon;
 		CIcon	smallIcon;
@@ -212,6 +224,11 @@ class ConsoleView
 
 		bool							m_bFlashTimerRunning;
 		DWORD							m_dwFlashes;
+
+		// since message handlers are not exception-safe,
+		// we'll store error messages thrown during OnCreate
+		// handler here...
+		CString							m_exceptionMessage;
 
 // static members
 private:

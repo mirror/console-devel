@@ -115,6 +115,7 @@ struct WindowSettings : public SettingsBase
 	bool			bShowCommandInTabs;
 	bool			bUseTabTitles;
 	DWORD			dwTrimTabTitles;
+	DWORD			dwTrimTabTitlesRight;
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -136,7 +137,9 @@ struct ControlsSettings
 	bool			bShowStatusbar;
 	bool			bShowTabs;
 	bool			bHideSingleTab;
+	bool			bTabsOnBottom;
 	bool			bShowScrollbars;
+	bool			bFlatScrollbars;
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -400,6 +403,7 @@ struct ShellSettings : public SettingsBase
 	ShellSettings& operator=(const ShellSettings& other);
 
 	bool IsConsoleIntegratedWithExplorer();
+	bool CouldIntegrateConsoleWithExplorer();
 	void IntegrateConsoleWithExplorer(bool integrate);
 
 	bool	bRunConsoleMenItem;
@@ -619,12 +623,16 @@ struct TabData
 	TabData(const wstring& shell, const wstring& initialDir)
 	: strTitle(L"Console")
 	, strIcon(L"")
+	, bUseDefaultIcon(false)
 	, strShell(shell)
 	, strInitialDir(initialDir)
+	, bRunAsUser(false)
+	, strUser()
 	, dwCursorStyle(0)
 	, crCursorColor(RGB(255, 255, 255))
 	, backgroundImageType(bktypeNone)
 	, crBackgroundColor(RGB(0, 0, 0))
+	, menuBitmap()
 	, imageData()
 	{
 	}
@@ -632,15 +640,20 @@ struct TabData
 	// custom shell settings
 	wstring							strTitle;
 	wstring							strIcon;
+	bool							bUseDefaultIcon;
 
 	wstring							strShell;
 	wstring							strInitialDir;
+	bool							bRunAsUser;
+	wstring							strUser;
 
 	DWORD							dwCursorStyle;
 	COLORREF						crCursorColor;
 
 	BackgroundImageType				backgroundImageType;
 	COLORREF						crBackgroundColor;
+
+	CBitmap							menuBitmap;
 
 	ImageData						imageData;
 };
@@ -722,7 +735,7 @@ class SettingsHandler
 		bool LoadSettings(const wstring& strSettingsFileName);
 		bool SaveSettings();
 
-		wstring	GetSettingsFileName() const { return m_strSettingsPath+m_strSettingsFileName; }
+		wstring	GetSettingsFileName() const { return m_strSettingsPath + m_strSettingsFileName; }
 
 		SettingsDirType GetSettingsDirType() const { return m_settingsDirType; }
 		void SetUserDataDir(SettingsDirType settingsDirType);
@@ -734,7 +747,7 @@ class SettingsHandler
 		MouseSettings& GetMouseSettings() { return m_mouseSettings; }
 		TabSettings& GetTabSettings() { return m_tabSettings; }
 
-		InternationalizationSettings& GetInternationalizationSettings() { return m_internationalizationSettings; }
+		InternationalizationSettings& GetInternationalizationSettings() { return m_internationalizationSettings; } // graynm:
 
 	private:
 
@@ -756,7 +769,7 @@ class SettingsHandler
 
 		TabSettings			m_tabSettings;
 
-		InternationalizationSettings	m_internationalizationSettings;
+		InternationalizationSettings	m_internationalizationSettings; // graynm:
 };
 
 //////////////////////////////////////////////////////////////////////////////

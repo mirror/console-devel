@@ -17,12 +17,15 @@ class Helpers
 		static wstring GetModulePath(HINSTANCE hInstance);
 
 		static wstring ExpandEnvironmentStrings(const wstring& str);
+		//static wstring ExpandEnvironmentStringsForUser(const shared_ptr<void>& userToken, const wstring& str);
 
 		static void GetMonitorRect(HWND hWnd, CRect& rectMonitor);
 		static void GetDesktopRect(HWND hWnd, CRect& rectDesktop);
 		static void GetDesktopRect(const CPoint& point, CRect& rectDesktop);
 
 		static HBITMAP CreateBitmap(HDC dc, DWORD dwWidth, DWORD dwHeight, CBitmap& bitmap);
+
+		static wstring LoadString(UINT uID);
 
 	private:
 

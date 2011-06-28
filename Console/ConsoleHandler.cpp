@@ -1,8 +1,10 @@
 #include "stdafx.h"
 
+#include "resource.h"
 #include "Console.h"
 
 #include "../shared/SharedMemNames.h"
+#include "ConsoleException.h"
 #include "ConsoleHandler.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -21,7 +23,8 @@
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-shared_ptr<void> ConsoleHandler::s_environmentBlock;
+shared_ptr<Mutex>	ConsoleHandler::s_parentProcessWatchdog;
+shared_ptr<void>	ConsoleHandler::s_environmentBlock;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -31,7 +34,7 @@ ConsoleHandler::ConsoleHandler()
 , m_consoleInfo()
 , m_consoleBuffer()
 , m_consoleCopyInfo()
-, m_consolePasteInfo()
+, m_consoleTextInfo()
 , m_consoleMouseEvent()
 , m_newConsoleSize()
 , m_newScrollPos()
@@ -72,8 +75,75 @@ void ConsoleHandler::SetupDelegates(ConsoleChangeDelegate consoleChangeDelegate,
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool ConsoleHandler::StartShellProcess(const wstring& strCustomShell, const wstring& strInitialDir, const wstring& strInitialCmd, const wstring& strConsoleTitle, DWORD dwStartupRows, DWORD dwStartupColumns, bool bDebugFlag)
+bool ConsoleHandler::StartShellProcess
+(
+	const wstring& strCustomShell, 
+	const wstring& strInitialDir, 
+	const wstring& strUser,
+	const wstring& strPassword,
+	const wstring& strInitialCmd, 
+	const wstring& strConsoleTitle, 
+	DWORD dwStartupRows, 
+	DWORD dwStartupColumns, 
+	bool bDebugFlag
+)
 {
+	wstring strUsername(strUser);
+	wstring strDomain;
+
+//	shared_ptr<void> userProfileKey;
+//	shared_ptr<void> userEnvironment;
+//	shared_ptr<void> userToken;
+
+	if (strUsername.length() > 0)
+	{
+		size_t pos = strUsername.find(L'\\');
+		if (pos != wstring::npos)
+		{
+			strDomain	= strUsername.substr(0, pos);
+			strUsername	= strUsername.substr(pos+1);
+		}
+/*
+		// logon user
+		HANDLE hUserToken = NULL;
+		::LogonUser(
+			strUsername.c_str(), 
+			strDomain.length() > 0 ? strDomain.c_str() : NULL, 
+			strPassword.c_str(), 
+			LOGON32_LOGON_INTERACTIVE, 
+			LOGON32_PROVIDER_DEFAULT, 
+			&hUserToken);
+
+		userToken.reset(hUserToken, ::CloseHandle);
+*/
+
+/*
+		::ImpersonateLoggedOnUser(userToken.get());
+
+		wchar_t	szComspec[MAX_PATH];
+		::GetEnvironmentVariable(L"COMSPEC", szComspec, MAX_PATH);
+*/
+
+
+/*
+		// load user's profile
+		// seems to be necessary on WinXP for environment strings' expainsion to work properly
+		PROFILEINFO userProfile;
+		::ZeroMemory(&userProfile, sizeof(PROFILEINFO));
+		userProfile.dwSize = sizeof(PROFILEINFO);
+		userProfile.lpUserName = const_cast<wchar_t*>(strUser.c_str());
+		
+		::LoadUserProfile(userToken.get(), &userProfile);
+		userProfileKey.reset(userProfile.hProfile, bind<BOOL>(::UnloadUserProfile, userToken.get(), _1));
+*/
+/*		// load user's environment
+		void*	pEnvironment	= NULL;
+		::CreateEnvironmentBlock(&pEnvironment, userToken.get(), FALSE);
+		userEnvironment.reset(pEnvironment, ::DestroyEnvironmentBlock);
+		::RevertToSelf();
+*/
+	}
+
 	wstring	strShellCmdLine(strCustomShell);
 	
 	if (strShellCmdLine.length() == 0)
@@ -82,13 +152,28 @@ bool ConsoleHandler::StartShellProcess(const wstring& strCustomShell, const wstr
 
 		::ZeroMemory(szComspec, MAX_PATH*sizeof(wchar_t));
 
-		if (::GetEnvironmentVariable(L"COMSPEC", szComspec, MAX_PATH) > 0)
+		if (strUsername.length() > 0)
 		{
-			strShellCmdLine = szComspec;		
+/*			// resolve comspec when running as another user
+			wchar_t* pszComspec = reinterpret_cast<wchar_t*>(userEnvironment.get());
+
+			while ((pszComspec[0] != L'\x00') && (_wcsnicmp(pszComspec, L"comspec", 7) != 0)) pszComspec += wcslen(pszComspec)+1;
+
+			if (pszComspec[0] != L'\x00')
+			{
+				strShellCmdLine = (pszComspec + 8);
+			}
+*/
+			if (strShellCmdLine.length() == 0) strShellCmdLine = L"cmd.exe";
 		}
 		else
 		{
-			strShellCmdLine = L"cmd.exe";
+			if (::GetEnvironmentVariable(L"COMSPEC", szComspec, MAX_PATH) > 0)
+			{
+				strShellCmdLine = szComspec;		
+			}
+
+			if (strShellCmdLine.length() == 0) strShellCmdLine = L"cmd.exe";
 		}
 	}
 
@@ -106,7 +191,8 @@ bool ConsoleHandler::StartShellProcess(const wstring& strCustomShell, const wstr
 //		strStartupTitle = str(wformat(L"Console2 command window 0x%08X") % this);
 	}
 
-	wstring strStartupDir(Helpers::ExpandEnvironmentStrings(strInitialDir));
+//	wstring strStartupDir((strUsername.length() > 0) ? Helpers::ExpandEnvironmentStringsForUser(userToken, strInitialDir) : Helpers::ExpandEnvironmentStrings(strInitialDir));
+	wstring strStartupDir((strUsername.length() > 0) ? strInitialDir : Helpers::ExpandEnvironmentStrings(strInitialDir));
 
 	if (strStartupDir.length() > 0)
 	{
@@ -169,23 +255,48 @@ bool ConsoleHandler::StartShellProcess(const wstring& strCustomShell, const wstr
 	// TODO: not supported yet
 	//if (bDebugFlag) dwStartupFlags |= DEBUG_PROCESS;
 
-	if (!::CreateProcess(
+	
+	if (strUsername.length() > 0)
+	{
+		if (!::CreateProcessWithLogonW(
+			strUsername.c_str(), 
+			strDomain.length() > 0 ? strDomain.c_str() : NULL, 
+			strPassword.c_str(), 
+			LOGON_WITH_PROFILE,
 			NULL,
-			const_cast<wchar_t*>(Helpers::ExpandEnvironmentStrings(strShellCmdLine).c_str()),
-			NULL,
-			NULL,
-			FALSE,
+//			const_cast<wchar_t*>(Helpers::ExpandEnvironmentStringsForUser(userToken, strShellCmdLine).c_str()),
+			const_cast<wchar_t*>(strShellCmdLine.c_str()),
 			dwStartupFlags,
-			s_environmentBlock.get(),
+//			userEnvironment.get(),
+			NULL,
 			(strStartupDir.length() > 0) ? const_cast<wchar_t*>(strStartupDir.c_str()) : NULL,
 			&si,
 			&pi))
+		{
+			throw ConsoleException(str(wformat(Helpers::LoadStringW(IDS_ERR_CANT_START_SHELL_AS_USER)) % strShellCmdLine % strUser));
+		}
+	}
+	else
 	{
-		return false;
+		if (!::CreateProcess(
+				NULL,
+				const_cast<wchar_t*>(Helpers::ExpandEnvironmentStrings(strShellCmdLine).c_str()),
+				NULL,
+				NULL,
+				FALSE,
+				dwStartupFlags,
+				s_environmentBlock.get(),
+				(strStartupDir.length() > 0) ? const_cast<wchar_t*>(strStartupDir.c_str()) : NULL,
+				&si,
+				&pi))
+		{
+			throw ConsoleException(str(wformat(Helpers::LoadString(IDS_ERR_CANT_START_SHELL)) % strShellCmdLine));
+		}
 	}
 
 	// create shared memory objects
-	CreateSharedObjects(pi.dwProcessId);
+	CreateSharedObjects(pi.dwProcessId, strUser);
+	CreateWatchdog();
 
 	// write startup params
 	m_consoleParams->dwConsoleMainThreadId	= pi.dwThreadId;
@@ -200,7 +311,7 @@ bool ConsoleHandler::StartShellProcess(const wstring& strCustomShell, const wstr
 	m_hConsoleProcess = shared_ptr<void>(pi.hProcess, ::CloseHandle);
 
 	// inject our hook DLL into console process
-	if (!InjectHookDLL()) return false;
+	if (!InjectHookDLL(pi)) return false;
 
 	// resume the console process
 	::ResumeThread(pi.hThread);
@@ -319,22 +430,21 @@ void ConsoleHandler::UpdateEnvironmentBlock()
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-
 //////////////////////////////////////////////////////////////////////////////
 
-bool ConsoleHandler::CreateSharedObjects(DWORD dwConsoleProcessId)
+bool ConsoleHandler::CreateSharedObjects(DWORD dwConsoleProcessId, const wstring& strUser)
 {
 	// create startup params shared memory
-	m_consoleParams.Create((SharedMemNames::formatConsoleParams % dwConsoleProcessId).str(), 1, syncObjRequest);
+	m_consoleParams.Create((SharedMemNames::formatConsoleParams % dwConsoleProcessId).str(), 1, syncObjBoth, strUser);
 
 	// create console info shared memory
-	m_consoleInfo.Create((SharedMemNames::formatInfo % dwConsoleProcessId).str(), 1, syncObjRequest);
+	m_consoleInfo.Create((SharedMemNames::formatInfo % dwConsoleProcessId).str(), 1, syncObjRequest, strUser);
 
 	// create console info shared memory
-	m_cursorInfo.Create((SharedMemNames::formatCursorInfo % dwConsoleProcessId).str(), 1, syncObjRequest);
+	m_cursorInfo.Create((SharedMemNames::formatCursorInfo % dwConsoleProcessId).str(), 1, syncObjRequest, strUser);
 
 	// TODO: max console size
-	m_consoleBuffer.Create((SharedMemNames::formatBuffer % dwConsoleProcessId).str(), 200*200, syncObjRequest);
+	m_consoleBuffer.Create((SharedMemNames::formatBuffer % dwConsoleProcessId).str(), 200*200, syncObjRequest, strUser);
 
 	// initialize buffer with spaces
 	CHAR_INFO ci;
@@ -343,24 +453,23 @@ bool ConsoleHandler::CreateSharedObjects(DWORD dwConsoleProcessId)
 	for (int i = 0; i < 200*200; ++i) ::CopyMemory(&m_consoleBuffer[i], &ci, sizeof(CHAR_INFO));
 
 	// copy info
-	m_consoleCopyInfo.Create((SharedMemNames::formatCopyInfo % dwConsoleProcessId).str(), 1, syncObjBoth);
+	m_consoleCopyInfo.Create((SharedMemNames::formatCopyInfo % dwConsoleProcessId).str(), 1, syncObjBoth, strUser);
 
-	// paste info (used for pasting and sending text to console)
-	m_consolePasteInfo.Create((SharedMemNames::formatPasteInfo % dwConsoleProcessId).str(), 1, syncObjBoth);
+	// text info (used for sending text to console)
+	m_consoleTextInfo.Create((SharedMemNames::formatTextInfo % dwConsoleProcessId).str(), 1, syncObjBoth, strUser);
 
 	// mouse event
-	m_consoleMouseEvent.Create((SharedMemNames::formatMouseEvent % dwConsoleProcessId).str(), 1, syncObjBoth);
+	m_consoleMouseEvent.Create((SharedMemNames::formatMouseEvent % dwConsoleProcessId).str(), 1, syncObjBoth, strUser);
 
 	// new console size
-	m_newConsoleSize.Create((SharedMemNames::formatNewConsoleSize % dwConsoleProcessId).str(), 1, syncObjRequest);
+	m_newConsoleSize.Create((SharedMemNames::formatNewConsoleSize % dwConsoleProcessId).str(), 1, syncObjRequest, strUser);
 
 	// new scroll position
-	m_newScrollPos.Create((SharedMemNames::formatNewScrollPos % dwConsoleProcessId).str(), 1, syncObjRequest);
+	m_newScrollPos.Create((SharedMemNames::formatNewScrollPos % dwConsoleProcessId).str(), 1, syncObjRequest, strUser);
 
 	// TODO: separate function for default settings
 	m_consoleParams->dwRows		= 25;
 	m_consoleParams->dwColumns	= 80;
-
 
 	return true;
 }
@@ -370,57 +479,265 @@ bool ConsoleHandler::CreateSharedObjects(DWORD dwConsoleProcessId)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool ConsoleHandler::InjectHookDLL()
+void ConsoleHandler::CreateWatchdog()
 {
+	if (!s_parentProcessWatchdog)
+	{
+		shared_ptr<void>	sd;	// PSECURITY_DESCRIPTOR
+
+		sd.reset(::LocalAlloc(LPTR, SECURITY_DESCRIPTOR_MIN_LENGTH), ::LocalFree);
+		if (::InitializeSecurityDescriptor(sd.get(), SECURITY_DESCRIPTOR_REVISION))
+		{
+			::SetSecurityDescriptorDacl(
+				sd.get(), 
+				TRUE,		// bDaclPresent flag   
+				NULL,		// full access to everyone
+				FALSE);		// not a default DACL 
+		}
+
+		SECURITY_ATTRIBUTES	sa;
+
+		::ZeroMemory(&sa, sizeof(SECURITY_ATTRIBUTES));
+		sa.nLength				= sizeof(SECURITY_ATTRIBUTES);
+		sa.bInheritHandle		= FALSE;
+		sa.lpSecurityDescriptor	= sd.get();
+
+		s_parentProcessWatchdog.reset(new Mutex(&sa, TRUE, (LPCTSTR)((SharedMemNames::formatWatchdog % ::GetCurrentProcessId()).str().c_str())));
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+bool ConsoleHandler::InjectHookDLL(PROCESS_INFORMATION& pi)
+{
+
 	// allocate memory for parameter in the remote process
-	wstring				strHookDllPath(GetModulePath(NULL) + wstring(L"\\ConsoleHook.dll"));
+	wstring				strHookDllPath(GetModulePath(NULL));
 
 	if (::GetFileAttributes(strHookDllPath.c_str()) == INVALID_FILE_ATTRIBUTES) return false;
 
-	shared_ptr<void>	hRemoteThread;
-	shared_ptr<wchar_t>	pszHookDllPathRemote(
-							static_cast<wchar_t*>(::VirtualAllocEx(
-														m_hConsoleProcess.get(), 
-														NULL, 
-														strHookDllPath.length()*sizeof(wchar_t), 
-														MEM_COMMIT, 
-														PAGE_READWRITE)),
-							bind<BOOL>(::VirtualFreeEx, m_hConsoleProcess.get(), _1, NULL, MEM_RELEASE));
+	CONTEXT		context;
+	
+	void*		mem				= NULL;
+	size_t		memLen			= 0;
+	UINT_PTR	fnLoadLibrary	= NULL;
 
-	if (pszHookDllPathRemote.get() == NULL) return false;
+	size_t		codeSize;
+	BOOL		isWow64Process	= FALSE;
 
-	// write the memory
-	if (!::WriteProcessMemory(
-				m_hConsoleProcess.get(), 
-				(PVOID)pszHookDllPathRemote.get(), 
-				(PVOID)strHookDllPath.c_str(), 
-				strHookDllPath.length()*sizeof(wchar_t), 
-				NULL))
+#ifdef _WIN64
+	WOW64_CONTEXT 	wow64Context;
+	DWORD			fnWow64LoadLibrary	= 0;
+
+	::ZeroMemory(&wow64Context, sizeof(WOW64_CONTEXT));
+	::IsWow64Process(pi.hProcess, &isWow64Process);
+	codeSize = isWow64Process ? 20 : 91;
+#else
+	codeSize = 20;
+#endif
+
+	if (isWow64Process)
 	{
-		return false;
+		// starting a 32-bit process from a 64-bit console
+		strHookDllPath += wstring(L"\\ConsoleHook32.dll");
+	}
+	else
+	{
+		// same bitness :-)
+		strHookDllPath += wstring(L"\\ConsoleHook.dll");
 	}
 
-	// get address to LoadLibraryW function
-	PTHREAD_START_ROUTINE pfnThreadRoutine = (PTHREAD_START_ROUTINE)::GetProcAddress(::GetModuleHandle(L"Kernel32.dll"), "LoadLibraryW");
-	if (pfnThreadRoutine == NULL) return false;
+	::ZeroMemory(&context, sizeof(CONTEXT));
 
-	// start the remote thread
-	hRemoteThread = shared_ptr<void>(
-						::CreateRemoteThread(
-							m_hConsoleProcess.get(), 
-							NULL, 
-							0, 
-							pfnThreadRoutine, 
-							(PVOID)pszHookDllPathRemote.get(), 
-							0, 
-							NULL),
-						::CloseHandle);
+	shared_array<BYTE> code(new BYTE[codeSize + (MAX_PATH*sizeof(wchar_t))]);
 
-	if (hRemoteThread.get() == NULL) return false;
+	memLen = (strHookDllPath.length()+1)*sizeof(wchar_t);
+	if (memLen > MAX_PATH*sizeof(wchar_t)) return false;
 
-	// wait for the thread to finish
-//	::WaitForSingleObject(hRemoteThread.get(), INFINITE);
-	if (::WaitForSingleObject(hRemoteThread.get(), 10000) == WAIT_TIMEOUT) return false;
+	::CopyMemory(code.get() + codeSize, strHookDllPath.c_str(), memLen);
+	memLen += codeSize;
+
+#ifdef _WIN64
+
+	if (isWow64Process)
+	{
+		wow64Context.ContextFlags = CONTEXT_FULL;
+		::Wow64GetThreadContext(pi.hThread, &wow64Context);
+
+		mem = ::VirtualAllocEx(pi.hProcess, NULL, memLen, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+
+		// get 32-bit kernel32
+		wstring strConsoleWowPath(GetModulePath(NULL) + wstring(L"\\ConsoleWow.exe"));
+
+		STARTUPINFO siWow;
+		::ZeroMemory(&siWow, sizeof(STARTUPINFO));
+
+		siWow.cb			= sizeof(STARTUPINFO);
+		siWow.dwFlags		= STARTF_USESHOWWINDOW;
+		siWow.wShowWindow	= SW_HIDE;
+		
+		PROCESS_INFORMATION piWow;
+
+		if (!::CreateProcess(
+				NULL,
+				const_cast<wchar_t*>(strConsoleWowPath.c_str()),
+				NULL,
+				NULL,
+				FALSE,
+				0,
+				NULL,
+				NULL,
+				&siWow,
+				&piWow))
+		{
+			return false;
+		}
+
+		shared_ptr<void> wowProcess(piWow.hProcess, ::CloseHandle);
+		shared_ptr<void> wowThread(piWow.hThread, ::CloseHandle);
+
+		if (::WaitForSingleObject(wowProcess.get(), 5000) == WAIT_TIMEOUT)
+		{
+			return false;
+		}
+
+		::GetExitCodeProcess(wowProcess.get(), reinterpret_cast<DWORD*>(&fnWow64LoadLibrary));
+	}
+	else
+	{
+		context.ContextFlags = CONTEXT_FULL;
+		::GetThreadContext(pi.hThread, &context);
+
+		mem = ::VirtualAllocEx(pi.hProcess, NULL, memLen, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		fnLoadLibrary = (UINT_PTR)::GetProcAddress(::GetModuleHandle(L"kernel32.dll"), "LoadLibraryW");
+	}
+
+
+#else
+	context.ContextFlags = CONTEXT_FULL;
+	::GetThreadContext(pi.hThread, &context);
+
+	mem = ::VirtualAllocEx(pi.hProcess, NULL, memLen, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+	fnLoadLibrary = (UINT_PTR)::GetProcAddress(::GetModuleHandle(L"kernel32.dll"), "LoadLibraryW");
+#endif
+
+	union
+	{
+		PBYTE  pB;
+		PINT   pI;
+		PULONGLONG pL;
+	} ip;
+
+	ip.pB = code.get();
+
+#ifdef _WIN64
+
+	if (isWow64Process)
+	{
+		*ip.pB++ = 0x68;			// push  eip
+		*ip.pI++ = wow64Context.Eip;
+		*ip.pB++ = 0x9c;			// pushf
+		*ip.pB++ = 0x60;			// pusha
+		*ip.pB++ = 0x68;			// push  "path\to\our.dll"
+		*ip.pI++ = (DWORD)mem + codeSize;
+		*ip.pB++ = 0xe8;			// call  LoadLibraryW
+		*ip.pI++ = (DWORD)fnWow64LoadLibrary - ((DWORD)mem + (ip.pB+4 - code.get()));
+		*ip.pB++ = 0x61;			// popa
+		*ip.pB++ = 0x9d;			// popf
+		*ip.pB++ = 0xc3;			// ret
+
+		::WriteProcessMemory(pi.hProcess, mem, code.get(), memLen, NULL);
+		::FlushInstructionCache(pi.hProcess, mem, memLen);
+		wow64Context.Eip = (DWORD)mem;
+		::Wow64SetThreadContext(pi.hThread, &wow64Context);
+	}
+	else
+	{
+		*ip.pL++ = context.Rip;
+		*ip.pL++ = fnLoadLibrary;
+		*ip.pB++ = 0x9C;					// pushfq
+		*ip.pB++ = 0x50;					// push  rax
+		*ip.pB++ = 0x51;					// push  rcx
+		*ip.pB++ = 0x52;					// push  rdx
+		*ip.pB++ = 0x53;					// push  rbx
+		*ip.pB++ = 0x55;					// push  rbp
+		*ip.pB++ = 0x56;					// push  rsi
+		*ip.pB++ = 0x57;					// push  rdi
+		*ip.pB++ = 0x41; *ip.pB++ = 0x50;	// push  r8
+		*ip.pB++ = 0x41; *ip.pB++ = 0x51;	// push  r9
+		*ip.pB++ = 0x41; *ip.pB++ = 0x52;	// push  r10
+		*ip.pB++ = 0x41; *ip.pB++ = 0x53;	// push  r11
+		*ip.pB++ = 0x41; *ip.pB++ = 0x54;	// push  r12
+		*ip.pB++ = 0x41; *ip.pB++ = 0x55;	// push  r13
+		*ip.pB++ = 0x41; *ip.pB++ = 0x56;	// push  r14
+		*ip.pB++ = 0x41; *ip.pB++ = 0x57;	// push  r15
+		*ip.pB++ = 0x48;					// sub   rsp, 40
+		*ip.pB++ = 0x83;
+		*ip.pB++ = 0xEC;
+		*ip.pB++ = 0x28;
+
+		*ip.pB++ = 0x48;					// lea	 ecx, "path\to\our.dll"
+		*ip.pB++ = 0x8D;
+		*ip.pB++ = 0x0D;
+		*ip.pI++ = 40;
+
+		*ip.pB++ = 0xFF;					// call  LoadLibraryW
+		*ip.pB++ = 0x15;
+		*ip.pI++ = -49;
+		
+		*ip.pB++ = 0x48;					// add   rsp, 40
+		*ip.pB++ = 0x83;
+		*ip.pB++ = 0xC4;
+		*ip.pB++ = 0x28;
+
+		*ip.pB++ = 0x41; *ip.pB++ = 0x5F;	// pop   r15
+		*ip.pB++ = 0x41; *ip.pB++ = 0x5E;	// pop   r14
+		*ip.pB++ = 0x41; *ip.pB++ = 0x5D;	// pop   r13
+		*ip.pB++ = 0x41; *ip.pB++ = 0x5C;	// pop   r12
+		*ip.pB++ = 0x41; *ip.pB++ = 0x5B;	// pop   r11
+		*ip.pB++ = 0x41; *ip.pB++ = 0x5A;	// pop   r10
+		*ip.pB++ = 0x41; *ip.pB++ = 0x59;	// pop   r9
+		*ip.pB++ = 0x41; *ip.pB++ = 0x58;	// pop   r8
+		*ip.pB++ = 0x5F;					// pop	 rdi
+		*ip.pB++ = 0x5E;					// pop	 rsi
+		*ip.pB++ = 0x5D;					// pop	 rbp
+		*ip.pB++ = 0x5B;					// pop	 rbx
+		*ip.pB++ = 0x5A;					// pop	 rdx
+		*ip.pB++ = 0x59;					// pop	 rcx
+		*ip.pB++ = 0x58;					// pop	 rax
+		*ip.pB++ = 0x9D;					// popfq
+		*ip.pB++ = 0xff;					// jmp	 Rip
+		*ip.pB++ = 0x25;
+		*ip.pI++ = -91;
+
+		::WriteProcessMemory(pi.hProcess, mem, code.get(), memLen, NULL);
+		::FlushInstructionCache(pi.hProcess, mem, memLen);
+		context.Rip = (UINT_PTR)mem + 16;
+		::SetThreadContext(pi.hThread, &context);
+	}
+
+#else
+
+	*ip.pB++ = 0x68;			// push  eip
+	*ip.pI++ = context.Eip;
+	*ip.pB++ = 0x9c;			// pushf
+	*ip.pB++ = 0x60;			// pusha
+	*ip.pB++ = 0x68;			// push  "path\to\our.dll"
+	*ip.pI++ = (UINT_PTR)mem + codeSize;
+	*ip.pB++ = 0xe8;			// call  LoadLibraryW
+	*ip.pI++ = (UINT_PTR)fnLoadLibrary - ((UINT_PTR)mem + (ip.pB+4 - code.get()));
+	*ip.pB++ = 0x61;			// popa
+	*ip.pB++ = 0x9d;			// popf
+	*ip.pB++ = 0xc3;			// ret
+
+	::WriteProcessMemory(pi.hProcess, mem, code.get(), memLen, NULL);
+	::FlushInstructionCache(pi.hProcess, mem, memLen);
+	context.Eip = (UINT_PTR)mem;
+	::SetThreadContext(pi.hThread, &context);
+#endif
 
 	return true;
 }
@@ -448,19 +765,16 @@ DWORD WINAPI ConsoleHandler::MonitorThreadStatic(LPVOID lpParameter)
 
 DWORD ConsoleHandler::MonitorThread()
 {
-	{
-		// resume hook monitor thread
-		shared_ptr<void> hHookMonitorThread(::OpenThread(THREAD_ALL_ACCESS, FALSE, m_consoleParams->dwHookThreadId), ::CloseHandle);
-		::ResumeThread(hHookMonitorThread.get());
-	}
+	// resume ConsoleHook's thread
+	m_consoleParams.SetRespEvent();
 
 	HANDLE arrWaitHandles[] = { m_hConsoleProcess.get(), m_hMonitorThreadExit.get(), m_consoleBuffer.GetReqEvent() };
 	while (::WaitForMultipleObjects(sizeof(arrWaitHandles)/sizeof(arrWaitHandles[0]), arrWaitHandles, FALSE, INFINITE) > WAIT_OBJECT_0 + 1)
 	{
-		DWORD				dwColumns	= m_consoleInfo->srWindow.Right - m_consoleInfo->srWindow.Left + 1;
-		DWORD				dwRows		= m_consoleInfo->srWindow.Bottom - m_consoleInfo->srWindow.Top + 1;
-		DWORD				dwBufferColumns	= m_consoleInfo->dwSize.X;
-		DWORD				dwBufferRows	= m_consoleInfo->dwSize.Y;
+		DWORD				dwColumns	= m_consoleInfo->csbi.srWindow.Right - m_consoleInfo->csbi.srWindow.Left + 1;
+		DWORD				dwRows		= m_consoleInfo->csbi.srWindow.Bottom - m_consoleInfo->csbi.srWindow.Top + 1;
+		DWORD				dwBufferColumns	= m_consoleInfo->csbi.dwSize.X;
+		DWORD				dwBufferRows	= m_consoleInfo->csbi.dwSize.Y;
 		bool				bResize		= false;
 
 		if ((m_consoleParams->dwColumns != dwColumns) ||

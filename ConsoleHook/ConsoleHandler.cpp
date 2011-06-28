@@ -16,13 +16,12 @@ using namespace boost;
 //////////////////////////////////////////////////////////////////////////////
 
 ConsoleHandler::ConsoleHandler()
-: m_hParentProcess()
-, m_consoleParams()
+: m_consoleParams()
 , m_consoleInfo()
 , m_cursorInfo()
 , m_consoleBuffer()
 , m_consoleCopyInfo()
-, m_consolePasteInfo()
+, m_consoleTextInfo()
 , m_consoleMouseEvent()
 , m_newConsoleSize()
 , m_newScrollPos()
@@ -104,8 +103,8 @@ bool ConsoleHandler::OpenSharedObjects()
 	// copy info
 	m_consoleCopyInfo.Open((SharedMemNames::formatCopyInfo % dwProcessId).str(), syncObjBoth);
 
-	// paste info (used for pasting and sending text to console)
-	m_consolePasteInfo.Open((SharedMemNames::formatPasteInfo % dwProcessId).str(), syncObjBoth);
+	// text info (used for sending text to console)
+	m_consoleTextInfo.Open((SharedMemNames::formatTextInfo % dwProcessId).str(), syncObjBoth);
 
 	// mouse event
 	m_consoleMouseEvent.Open((SharedMemNames::formatMouseEvent % dwProcessId).str(), syncObjBoth);
@@ -128,18 +127,17 @@ void ConsoleHandler::ReadConsoleBuffer()
 {
 	// we take a fresh STDOUT handle - seems to work better (in case a program
 	// has opened a new screen output buffer)
-	shared_ptr<void> hStdOut(
-						::CreateFile(
-							L"CONOUT$",
-							GENERIC_WRITE | GENERIC_READ,
-							FILE_SHARE_READ | FILE_SHARE_WRITE,
-							NULL,
-							OPEN_EXISTING,
-							0,
-							0),
-							::CloseHandle);
+	// no need to call CloseHandle when done, we're reusing console handles
+	shared_ptr<void> hStdOut(::CreateFile(
+								L"CONOUT$",
+								GENERIC_WRITE | GENERIC_READ,
+								FILE_SHARE_READ | FILE_SHARE_WRITE,
+								NULL,
+								OPEN_EXISTING,
+								0,
+								0),
+								::CloseHandle);
 
-	// get total console size
 	CONSOLE_SCREEN_BUFFER_INFO	csbiConsole;
 	COORD						coordConsoleSize;
 
@@ -224,16 +222,25 @@ void ConsoleHandler::ReadConsoleBuffer()
 //	TRACE(L"===================================================================\n");
 
 	// compare previous buffer, and if different notify Console
-	if ((::memcmp(m_consoleInfo.Get(), &csbiConsole, sizeof(CONSOLE_SCREEN_BUFFER_INFO)) != 0) ||
-		(m_dwScreenBufferSize != dwScreenBufferSize) ||
-		(::memcmp(m_consoleBuffer.Get(), pScreenBuffer.get(), m_dwScreenBufferSize*sizeof(CHAR_INFO)) != 0))
-	{
-		SharedMemoryLock bufferLock(m_consoleBuffer);
+	SharedMemoryLock consoleInfoLock(m_consoleInfo);
+	SharedMemoryLock bufferLock(m_consoleBuffer);
 
+	bool textChanged = (::memcmp(m_consoleBuffer.Get(), pScreenBuffer.get(), m_dwScreenBufferSize*sizeof(CHAR_INFO)) != 0);
+
+	if ((::memcmp(&m_consoleInfo->csbi, &csbiConsole, sizeof(CONSOLE_SCREEN_BUFFER_INFO)) != 0) ||
+		(m_dwScreenBufferSize != dwScreenBufferSize) ||
+		textChanged)
+	{
 		// update screen buffer variables
 		m_dwScreenBufferSize = dwScreenBufferSize;
+
+		::CopyMemory(&m_consoleInfo->csbi, &csbiConsole, sizeof(CONSOLE_SCREEN_BUFFER_INFO));
+		
+		// only Console sets the flag to false, after it's done repainting text
+		if (textChanged) m_consoleInfo->textChanged = true;
+
 		::CopyMemory(m_consoleBuffer.Get(), pScreenBuffer.get(), m_dwScreenBufferSize*sizeof(CHAR_INFO));
-		::CopyMemory(m_consoleInfo.Get(), &csbiConsole, sizeof(CONSOLE_SCREEN_BUFFER_INFO));
+
 		::GetConsoleCursorInfo(hStdOut.get(), m_cursorInfo.Get());
 
 		m_consoleBuffer.SetReqEvent();
@@ -583,110 +590,14 @@ void ConsoleHandler::CopyConsoleText()
 
 //////////////////////////////////////////////////////////////////////////////
 
-void ConsoleHandler::PasteConsoleText(HANDLE hStdIn, const shared_ptr<wchar_t>& pszPasteBuffer)
+void ConsoleHandler::SendConsoleText(HANDLE hStdIn, const shared_ptr<wchar_t>& textBuffer)
 {
-	wchar_t*	pszText	= NULL;
-	HANDLE		hData	= NULL;
+	wchar_t*	pszText	= textBuffer.get();
+	size_t		textLen = wcslen(pszText);
+	size_t		partLen	= 512;
+	size_t		parts	= textLen/partLen;
+	size_t		offset	= 0;
 
-	if (pszPasteBuffer.get() == NULL)
-	{
-		// pasting text
-		if (!IsClipboardFormatAvailable(CF_UNICODETEXT)) return;
-		
-		if (!::OpenClipboard(m_consoleParams->hwndConsoleWindow)) return; 
-
-		hData	= ::GetClipboardData(CF_UNICODETEXT);
-		pszText	= reinterpret_cast<wchar_t*>(::GlobalLock(hData));
-	}
-	else
-	{
-		// text sent to console
-		pszText = pszPasteBuffer.get();
-	}
-
-
-
-
-/*
-	size_t	textLen			= wcslen(pszText);
-	size_t	textOffset		= 0;
-
-	size_t	maxConsoleInputCount	= 512;
-	size_t	consoleInputCount		= 0;
-
-	scoped_array<INPUT_RECORD> consoleInputs(new INPUT_RECORD[maxConsoleInputCount]);
-	::ZeroMemory(consoleInputs.get(), sizeof(INPUT_RECORD)*maxConsoleInputCount);
-
-	for (; textOffset < textLen; ++textOffset)
-	{
-		if (consoleInputCount == maxConsoleInputCount)
-		{
-			WriteConsoleInput(hStdIn, consoleInputs, consoleInputCount, maxConsoleInputCount);		
-		}
-
-		if ((pszText[textOffset] == L'\r') || (pszText[textOffset] == L'\n'))
-		{
-			if (consoleInputCount > 0)
-			{
-				WriteConsoleInput(hStdIn, consoleInputs, consoleInputCount, maxConsoleInputCount);		
-			}
-
-			short	sInputCount	= 0;
-
-			// first, we need to reset SHIFT/CTRL/ALT keys
-			scoped_array<INPUT>	kbdInputs(new INPUT[5]);
-			::ZeroMemory(kbdInputs.get(), 5*sizeof(INPUT));
-
-			SetResetKeyInput(kbdInputs, VK_SHIFT,	sInputCount);
-			SetResetKeyInput(kbdInputs, VK_CONTROL, sInputCount);
-			SetResetKeyInput(kbdInputs, VK_MENU,	sInputCount);
-
-			kbdInputs[sInputCount].type			= INPUT_KEYBOARD;
-			kbdInputs[sInputCount].ki.wVk		= VK_RETURN;
-			kbdInputs[sInputCount].ki.dwFlags	= 0;
-
-			++sInputCount;
-
-			kbdInputs[sInputCount].type			= INPUT_KEYBOARD;
-			kbdInputs[sInputCount].ki.wVk		= VK_RETURN;
-			kbdInputs[sInputCount].ki.dwFlags	= KEYEVENTF_KEYUP;
-
-			++sInputCount;
-
-			::SendInput(sInputCount, kbdInputs.get(), sizeof(INPUT));
-			::Sleep(10);
-
-			if ((pszText[textOffset] == L'\r') && (pszText[textOffset+1] == L'\n')) ++textOffset;
-		}
-		else
-		{
-			consoleInputs[consoleInputCount].EventType							= KEY_EVENT;
-			consoleInputs[consoleInputCount].Event.KeyEvent.bKeyDown			= TRUE;
-			consoleInputs[consoleInputCount].Event.KeyEvent.wRepeatCount		= 1;
-			consoleInputs[consoleInputCount].Event.KeyEvent.wVirtualKeyCode		= LOBYTE(::VkKeyScan(pszText[textOffset]));
-			consoleInputs[consoleInputCount].Event.KeyEvent.wVirtualScanCode	= 0;
-			consoleInputs[consoleInputCount].Event.KeyEvent.uChar.UnicodeChar	= pszText[textOffset];
-			consoleInputs[consoleInputCount].Event.KeyEvent.dwControlKeyState	= 0;
-
-			++consoleInputCount;
-		}
-	}
-
-	if (consoleInputCount > 0)
-	{
-		WriteConsoleInput(hStdIn, consoleInputs, consoleInputCount, 0);		
-	}
-
-*/
-
-
-
-	size_t	textLen = wcslen(pszText);
-	size_t	partLen	= 512;
-	size_t	parts	= textLen/partLen;
-	size_t	offset	= 0;
-
-//	TRACE(L"Pasting %i\n", textLen);
 	for (size_t part = 0; part < parts+1; ++part)
 	{
 		size_t	keyEventCount = 0;
@@ -704,16 +615,6 @@ void ConsoleHandler::PasteConsoleText(HANDLE hStdIn, const shared_ptr<wchar_t>& 
 		{
 			if ((pszText[offset] == L'\r') || (pszText[offset] == L'\n'))
 			{
-/*
-				pKeyEvents[i].EventType							= KEY_EVENT;
-				pKeyEvents[i].Event.KeyEvent.bKeyDown			= TRUE;
-				pKeyEvents[i].Event.KeyEvent.wRepeatCount		= 1;
-				pKeyEvents[i].Event.KeyEvent.wVirtualKeyCode	= VK_RETURN;
-				pKeyEvents[i].Event.KeyEvent.wVirtualScanCode	= 0;
-				pKeyEvents[i].Event.KeyEvent.uChar.UnicodeChar	= L'\n';
-				pKeyEvents[i].Event.KeyEvent.dwControlKeyState	= 0;
-*/
-
 				if ((pszText[offset] == L'\r') && (pszText[offset+1] == L'\n')) ++offset;
 
 				if (keyEventCount > 0)
@@ -747,28 +648,6 @@ void ConsoleHandler::PasteConsoleText(HANDLE hStdIn, const shared_ptr<wchar_t>& 
 			::WriteConsoleInput(hStdIn, pKeyEvents.get(), static_cast<DWORD>(keyEventCount), &dwTextWritten);
 		}
 	}
-
-
-	if (pszPasteBuffer.get() == NULL)
-	{
-		::GlobalUnlock(hData);
-		::CloseClipboard();
-	}
-
-//	TRACE(L"\n");
-
-
-// 	for (DWORD i = 100; i < 1000; ++i)
-// 	{
-// 		INPUT_RECORD in;
-// 		::ZeroMemory(&in, sizeof(INPUT_RECORD));
-// 
-// 		in.EventType = MENU_EVENT;
-// 		in.Event.MenuEvent.dwCommandId = i;
-// 
-// 		DWORD	dwTextWritten	= 0;
-// 		::WriteConsoleInput(hStdIn, &in, 1, &dwTextWritten);
-// 	}
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -785,32 +664,6 @@ void ConsoleHandler::SetResetKeyInput(scoped_array<INPUT>& kbdInputs, WORD wVk, 
 		kbdInputs[sCount].ki.dwFlags	= KEYEVENTF_KEYUP;
 		++sCount;
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-
-//////////////////////////////////////////////////////////////////////////////
-
-void ConsoleHandler::WriteConsoleInput(HANDLE hStdIn, scoped_array<INPUT_RECORD>& consoleInputs, size_t& consoleInputCount, size_t maxConsoleInputCount)
-{
-	if (consoleInputCount > 0)
-	{
-		DWORD dwTextWritten = 0;
-		::WriteConsoleInput(hStdIn, consoleInputs.get(), static_cast<DWORD>(consoleInputCount), &dwTextWritten);
-	}
-
-	if (maxConsoleInputCount > 0)
-	{
-		consoleInputs.reset(new INPUT_RECORD[maxConsoleInputCount]);
-		::ZeroMemory(consoleInputs.get(), sizeof(INPUT_RECORD)*maxConsoleInputCount);
-	}
-	else
-	{
-		consoleInputs.reset();
-	}
-
-	consoleInputCount = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -889,7 +742,7 @@ void ConsoleHandler::SetConsoleParams(DWORD dwHookThreadId, HANDLE hStdOut)
 	TRACE(L"Max columns: %i, max rows: %i\n", m_consoleParams->dwMaxColumns, m_consoleParams->dwMaxRows);
 
 	// get initial window and cursor info
-	::GetConsoleScreenBufferInfo(hStdOut, m_consoleInfo.Get());
+	::GetConsoleScreenBufferInfo(hStdOut, &m_consoleInfo->csbi);
 	::GetConsoleCursorInfo(hStdOut, m_cursorInfo.Get());
 
 	m_consoleParams.SetReqEvent();
@@ -924,109 +777,61 @@ DWORD ConsoleHandler::MonitorThread()
 	// open shared objects (shared memory, events, etc)
 	if (!OpenSharedObjects()) return 0;
 	
-	// read parent process ID and get process handle
-	m_hParentProcess = shared_ptr<void>(
-							::OpenProcess(PROCESS_ALL_ACCESS, FALSE, m_consoleParams->dwParentProcessId),
-							::CloseHandle);
+	HANDLE hStdOut = ::CreateFile(
+						L"CONOUT$",
+						GENERIC_WRITE | GENERIC_READ,
+						FILE_SHARE_READ | FILE_SHARE_WRITE,
+						NULL,
+						OPEN_EXISTING,
+						0,
+						0);
 
-	TRACE(L"Parent process handle: 0x%08X\n", m_hParentProcess.get());
+	HANDLE hStdIn = ::CreateFile(
+						L"CONIN$",
+						GENERIC_WRITE | GENERIC_READ,
+						FILE_SHARE_READ | FILE_SHARE_WRITE,
+						NULL,
+						OPEN_EXISTING,
+						0,
+						0);
 
-/*
-	HANDLE	hStdOut			= ::GetStdHandle(STD_OUTPUT_HANDLE);
-	HANDLE	hStdIn			= ::GetStdHandle(STD_INPUT_HANDLE);
-*/
+	SetConsoleParams(::GetCurrentThreadId(), hStdOut);
 
+	if (::WaitForSingleObject(m_consoleParams.GetRespEvent(), 10000) == WAIT_TIMEOUT) return 0;
 
-	shared_ptr<void> hStdOut(
-						::CreateFile(
-							L"CONOUT$",
-							GENERIC_WRITE | GENERIC_READ,
-							FILE_SHARE_READ | FILE_SHARE_WRITE,
-							NULL,
-							OPEN_EXISTING,
-							0,
-							0),
-							::CloseHandle);
-
-	shared_ptr<void> hStdIn(
-						::CreateFile(
-							L"CONIN$",
-							GENERIC_WRITE | GENERIC_READ,
-							FILE_SHARE_READ | FILE_SHARE_WRITE,
-							NULL,
-							OPEN_EXISTING,
-							0,
-							0),
-							::CloseHandle);
-
-//	HANDLE	hStdErr			= ::GetStdHandle(STD_ERROR_HANDLE);
-
-	SetConsoleParams(::GetCurrentThreadId(), hStdOut.get());
-
-	::SuspendThread(GetCurrentThread());
-
-	ResizeConsoleWindow(hStdOut.get(), m_consoleParams->dwColumns, m_consoleParams->dwRows, 0);
+	ResizeConsoleWindow(hStdOut, m_consoleParams->dwColumns, m_consoleParams->dwRows, 0);
 
 	// FIX: this seems to case problems on startup
 //	ReadConsoleBuffer();
 
+	shared_ptr<void> parentProcessWatchdog(::OpenMutex(SYNCHRONIZE, FALSE, (LPCTSTR)((SharedMemNames::formatWatchdog % m_consoleParams->dwParentProcessId).str().c_str())), ::CloseHandle);
+	TRACE(L"Watchdog handle: 0x%08X\n", parentProcessWatchdog.get());
+
 	HANDLE	arrWaitHandles[] =
 	{
 		m_hMonitorThreadExit.get(), 
-//		hStdErr, 
 		m_consoleCopyInfo.GetReqEvent(), 
-		m_consolePasteInfo.GetReqEvent(), 
+		m_consoleTextInfo.GetReqEvent(), 
 		m_newScrollPos.GetReqEvent(),
 		m_consoleMouseEvent.GetReqEvent(), 
 		m_newConsoleSize.GetReqEvent(),
-		hStdOut.get(),
+		hStdOut,
 	};
 
 	DWORD	dwWaitRes		= 0;
 
 	while ((dwWaitRes = ::WaitForMultipleObjects(
-							sizeof(arrWaitHandles)/sizeof(arrWaitHandles[0]), 
+							sizeof(arrWaitHandles)/sizeof(arrWaitHandles[0]),
 							arrWaitHandles, 
 							FALSE, 
 							m_consoleParams->dwRefreshInterval)) != WAIT_OBJECT_0)
 	{
-/*
-		if (dwWaitRes == WAIT_FAILED)
+		if ((parentProcessWatchdog.get() != NULL) && (::WaitForSingleObject(parentProcessWatchdog.get(), 0) == WAIT_ABANDONED))
 		{
-			TRACE(L"dwWaitRes: %i\n", dwWaitRes);
-
-			if (::WaitForSingleObject(m_hMonitorThreadExit.get(), 0) == WAIT_FAILED) 
-			{
-				TRACE(L"m_hMonitorThreadExit.get()\n");
-			}
-
-			if (::WaitForSingleObject(hStdOut.get(), 0) == WAIT_FAILED) 
-			{
-				TRACE(L"hStdOut.get()\n");
-			}
-
-			if (::WaitForSingleObject(hStdErr, 0) == WAIT_FAILED) 
-			{
-				TRACE(L"hStdErr\n");
-			}
-
-			if (::WaitForSingleObject(m_consolePaste.GetEvent(), 0) == WAIT_FAILED) 
-			{
-				TRACE(L"m_consolePaste.GetEvent()\n");
-			}
-
-			if (::WaitForSingleObject(m_newConsoleSize.GetEvent(), 0) == WAIT_FAILED) 
-			{
-				TRACE(L"m_newConsoleSize.GetEvent()\n");
-			}
-
-			if (::WaitForSingleObject(m_newScrollPos.GetEvent(), 0) == WAIT_FAILED) 
-			{
-				TRACE(L"m_newScrollPos.GetEvent()\n");
-			}
-
+			TRACE(L"Watchdog 0x%08X died. Time to exit", parentProcessWatchdog.get());
+			::SendMessage(m_consoleParams->hwndConsoleWindow, WM_CLOSE, 0, 0);
+			break;
 		}
-*/
 
 		switch (dwWaitRes)
 		{
@@ -1040,22 +845,22 @@ DWORD ConsoleHandler::MonitorThread()
 				break;
 			}
 
-			// paste request
+			// send text request
 			case WAIT_OBJECT_0 + 2 :
 			{
-				SharedMemoryLock memLock(m_consolePasteInfo);
+				SharedMemoryLock memLock(m_consoleTextInfo);
 
-				shared_ptr<wchar_t>	pszPasteBuffer;
+				shared_ptr<wchar_t>	textBuffer;
 				
-				if (*m_consolePasteInfo.Get() != NULL)
+				if (m_consoleTextInfo->mem != NULL)
 				{
-					pszPasteBuffer.reset(
-									reinterpret_cast<wchar_t*>(*m_consolePasteInfo.Get()),
+					textBuffer.reset(
+									reinterpret_cast<wchar_t*>(m_consoleTextInfo->mem),
 									bind<BOOL>(::VirtualFreeEx, ::GetCurrentProcess(), _1, NULL, MEM_RELEASE));
 				}
 
-				PasteConsoleText(hStdIn.get(), pszPasteBuffer);
-				m_consolePasteInfo.SetRespEvent();
+				SendConsoleText(hStdIn, textBuffer);
+				m_consoleTextInfo.SetRespEvent();
 				break;
 			}
 
@@ -1064,11 +869,8 @@ DWORD ConsoleHandler::MonitorThread()
 			{
 				SharedMemoryLock memLock(m_newScrollPos);
 
-				ScrollConsole(hStdOut.get(), m_newScrollPos->cx, m_newScrollPos->cy);
+				ScrollConsole(hStdOut, m_newScrollPos->cx, m_newScrollPos->cy);
 				ReadConsoleBuffer();
-
-				::ResetEvent(hStdOut.get());
-//				::ResetEvent(hStdErr);
 				break;
 			}
 
@@ -1077,7 +879,7 @@ DWORD ConsoleHandler::MonitorThread()
 			{
 				SharedMemoryLock memLock(m_consoleMouseEvent);
 
-				SendMouseEvent(hStdIn.get());
+				SendMouseEvent(hStdIn);
 				m_consoleMouseEvent.SetRespEvent();
 				break;
 			}
@@ -1087,16 +889,12 @@ DWORD ConsoleHandler::MonitorThread()
 			{
 				SharedMemoryLock memLock(m_newConsoleSize);
 
-				ResizeConsoleWindow(hStdOut.get(), m_newConsoleSize->dwColumns, m_newConsoleSize->dwRows, m_newConsoleSize->dwResizeWindowEdge);
+				ResizeConsoleWindow(hStdOut, m_newConsoleSize->dwColumns, m_newConsoleSize->dwRows, m_newConsoleSize->dwResizeWindowEdge);
 				ReadConsoleBuffer();
-
-				::ResetEvent(hStdOut.get());
-//				::ResetEvent(hStdErr);
 				break;
 			}
 
 			case WAIT_OBJECT_0 + 6 :
-//			case WAIT_OBJECT_0 + 2 :
 				// something changed in the console
 				// this has to be the last event, since it's the most 
 				// frequent one
@@ -1105,11 +903,8 @@ DWORD ConsoleHandler::MonitorThread()
 			{
 				// refresh timer
 				ReadConsoleBuffer();
-				::ResetEvent(hStdOut.get());
-//				::ResetEvent(hStdErr);
 				break;
 			}
-
 		}
 	}
 

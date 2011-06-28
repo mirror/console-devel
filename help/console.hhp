@@ -1,6 +1,6 @@
 [OPTIONS]
 Compatibility=1.1 or later
-Compiled file=console.chm
+Compiled file=Console.chm
 Contents file=console.hhc
 Default Window=Main
 Default topic=html\introduction.html
@@ -21,6 +21,7 @@ html\gpl.html
 html\acknowledgements.html
 html\running.html
 html\menus.html
+html\settings.html
 html\settings_console.html
 html\settings_appearance.html
 html\settings_appearance_more.html
@@ -33,6 +34,7 @@ html\tips_tricks.html
 html\bugs_limitations.html
 html\reporting_problems.html
 html\changelog.html
+html\credentials.html
 
 [INFOTYPES]
 

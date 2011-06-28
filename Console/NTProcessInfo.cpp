@@ -74,7 +74,7 @@ BOOL sm_GetNtProcessInfo(const DWORD dwPID, smPROCESSINFO *ppi)
 	BOOL  bReturnStatus						= TRUE;
 	DWORD dwSize							= 0;
 	DWORD dwSizeNeeded						= 0;
-	DWORD dwBytesRead						= 0;
+	SIZE_T dwBytesRead						= 0;
 	DWORD dwBufferSize						= 0;
 	HANDLE hHeap							= 0;
 	WCHAR *pwszBuffer						= NULL;

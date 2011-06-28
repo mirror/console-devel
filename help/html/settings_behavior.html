@@ -23,6 +23,14 @@
 	</p>
 	<br />
 
+	<p class="block-row-name">Clear selection on copy</p>
+	<p class="block-row-description">
+		If checked, long lines will not be wrapped. When a selected row 
+		doesn't end with a space, a line break will not be inserted before
+		adding the next row.
+	</p>
+	<br />
+
 	<p class="block-row-name">Don't wrap long lines</p>
 	<p class="block-row-description">
 		If checked, long lines will not be wrapped. When a selected row 
@@ -52,6 +60,76 @@
 	</p>
 	<br />
 
+	<h2>Copy new line character</h2>
+
+	<p class="block-row-name">Windows (CR+LF)</p>
+	<p class="block-row-description">
+		If selected the copy operation will convert the carriage return using the Windows convention.
+	</p>
+
+	<p class="block-row-name">Unix (LF)</p>
+	<p class="block-row-description">
+		If selected the copy operation will convert the carriage return using the Unix convention.
+	</p>
+	<br />
+
+	<h2>Inactive tab activity flash</h2>
+
+	<p class="block-row-name">Flash inactive tabs</p>
+	<p class="block-row-description">
+		If checked the inactive tabs flashes when some activities are detected in the corresponding console.
+	</p>
+
+	<p class="block-row-name">Falshes</p>
+	<p class="block-row-description">
+		Indicate the number of time an inactive tab will flashes when some activities are detected in the corresponding console.
+	</p>
+
+	<p class="block-row-name">Leave highlighted</p>
+	<p class="block-row-description">
+		If checked the inactive tabs where some activities have been detected in the corresponding console are highlighted.
+	</p>
+	<br />
+
+	<h2>One instance</h2>
+
+	<p class="block-row-name">Allow multiple instances</p>
+	<p class="block-row-description">
+		If checked every call to Console2 will correspond to a new Console2 windows.
+		<br />
+		Otherwise only one instance of Console2 window will exist and the call to Console2 will correspond to tabs.
+	</p>
+
+	<p class="block-row-name">Reuse tab</p>
+	<p class="block-row-description">
+		If checked the call to Console2 will try to reuse existing tabs instead of creating new tabs for every call.
+	</p>
+
+	<p class="block-row-name">Reuse busy tab</p>
+	<p class="block-row-description">
+		If checked the call to Console2 will not reuse existing busy tabs when searching to reuse tabs.
+	</p>
+	<br />
+
+	<h2>Shell</h2>
+
+	<p class="block-row-name">Integrate with explorer</p>
+	<p class="block-row-description">
+		Can be checked if and only if Console2 run with Administrator privilege.
+		<br />
+		If checked the explorer context menu could contains the Run Console and the Run Console Tab menu items.
+	</p>
+
+	<p class="block-row-name">Run Console</p>
+	<p class="block-row-description">
+		If checked the explorer context menu will contains the Run Console menu item.
+	</p>
+
+	<p class="block-row-name">Run Console Tab</p>
+	<p class="block-row-description">
+		If checked the explorer context menu will contains the Run Console Tab sub menu.
+	</p>
+	<br />
 </body>
 
 </html>

@@ -45,6 +45,16 @@ extern CAppModule _Module;
 #pragma warning(disable: 4189 4267)
 #include "atlgdix.h"
 
+#if defined _M_IX86
+  #pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#elif defined _M_IA64
+  #pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='ia64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#elif defined _M_X64
+  #pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#else
+  #pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#endif
+
 #include "CustomTabCtrl.h"
 #include "DotNetTabCtrl.h"
 //#include "SimpleTabCtrls.h"
@@ -89,7 +99,7 @@ using namespace boost::multi_index;
 #include "../shared/SharedMemory.h"
 #include "../shared/Structures.h"
 
-#include "../shared/Messages.h"
+#include "../shared/Messages.h" // vds:
 
 #include "Helpers.h"
 #include "ConsoleHandler.h"
@@ -109,7 +119,7 @@ using namespace boost::multi_index;
 
 #define	VERSION_MAJOR	2
 #define	VERSION_MINOR	0
-#define	VERSION_BUILD	144
+#define	VERSION_BUILD	147
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -133,6 +143,9 @@ using namespace boost::multi_index;
 #define UM_SHOW_POPUP_MENU		WM_USER + 0x1004
 #define UM_START_MOUSE_DRAG		WM_USER + 0x1005
 #define UM_TRAY_NOTIFY			WM_USER + 0x1006
+
+#define UPDATE_CONSOLE_RESIZE		0x0001
+#define UPDATE_CONSOLE_TEXT_CHANGED	0x0002
 
 #define IDC_TRAY_ICON		0x0001
 
@@ -201,10 +214,3 @@ void Trace(const wchar_t* pszFormat, ...);
 
 //////////////////////////////////////////////////////////////////////////////
 
-
-//////////////////////////////////////////////////////////////////////////
-// Feature enable defines
-//////////////////////////////////////////////////////////////////////////
-
-// uncomment next line to enable use of WM_COPYDATA interface
-//#define USE_COPYDATA_MSG

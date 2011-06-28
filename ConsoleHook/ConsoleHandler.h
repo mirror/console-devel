@@ -31,11 +31,9 @@ class ConsoleHandler
 
 		void CopyConsoleText();
 
-		void PasteConsoleText(HANDLE hStdIn, const shared_ptr<wchar_t>& pszPasteBuffer);
+		void SendConsoleText(HANDLE hStdIn, const shared_ptr<wchar_t>& textBuffer);
 
 		void SetResetKeyInput(scoped_array<INPUT>& kbdInputs, WORD wVk, short& sCount);
-
-		void WriteConsoleInput(HANDLE hStdIn, scoped_array<INPUT_RECORD>& consoleInputs, size_t& consoleInputCount, size_t maxConsoleInputCount);
 
 		void SendMouseEvent(HANDLE hStdIn);
 
@@ -50,14 +48,12 @@ class ConsoleHandler
 
 	private:
 
-		shared_ptr<void>							m_hParentProcess;
-
 		SharedMemory<ConsoleParams>					m_consoleParams;
-		SharedMemory<CONSOLE_SCREEN_BUFFER_INFO>	m_consoleInfo;
+		SharedMemory<ConsoleInfo>	m_consoleInfo;
 		SharedMemory<CONSOLE_CURSOR_INFO>			m_cursorInfo;
 		SharedMemory<CHAR_INFO>						m_consoleBuffer;
 		SharedMemory<ConsoleCopy>					m_consoleCopyInfo;
-		SharedMemory<UINT_PTR>						m_consolePasteInfo;
+		SharedMemory<TextInfo>						m_consoleTextInfo;
 		SharedMemory<MOUSE_EVENT_RECORD>			m_consoleMouseEvent;
 
 		SharedMemory<ConsoleSize>					m_newConsoleSize;
