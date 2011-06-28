@@ -5,6 +5,7 @@ syntax: glob
 *.ncb
 *.suo
 *.user
+BuildLog.htm
 
 # ignore log files
 *.log
