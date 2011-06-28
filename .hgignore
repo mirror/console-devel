@@ -32,3 +32,4 @@ cvs\*.*
 *_i.c
 *_i.h
 help/Console.chm
+contrib/boost/*
