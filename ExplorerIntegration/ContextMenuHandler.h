@@ -10,6 +10,7 @@
 // Command IDs
 enum eContextMenuCommands{
 	eMC_RunConsole = 0,			///< run console with first tab
+	eMC_RunConsoleWithTabFake,
 	eMC_RunConsoleWithTab,		///< run console with selected tab
 };
 

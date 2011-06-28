@@ -4,8 +4,10 @@
 #include "aboutdlg.h"
 #include "Console.h"
 #include "ConsoleView.h"
+#include "ConsoleException.h"
 #include "DlgRenameTab.h"
 #include "DlgSettingsMain.h"
+#include "DlgCredentials.h"
 #include "MainFrame.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -80,7 +82,7 @@ BOOL MainFrame::PreTranslateMessage(MSG* pMsg)
 
 	if(CTabbedFrameImpl<MainFrame>::PreTranslateMessage(pMsg)) return TRUE;
 
-	if (m_activeView.get() == NULL) return FALSE;
+	if (!m_activeView) return FALSE;
 
 	return m_activeView->PreTranslateMessage(pMsg);
 }
@@ -99,6 +101,14 @@ BOOL MainFrame::OnIdle()
 
 	UpdateStatusBar();
 	UIUpdateToolBar();
+
+	if (m_activeView.get() != NULL)
+	{
+		UIEnable(ID_EDIT_COPY, m_activeView->CanCopy() ? TRUE : FALSE);
+		UIEnable(ID_EDIT_CLEAR_SELECTION, m_activeView->CanClearSelection() ? TRUE : FALSE);
+		UIEnable(ID_EDIT_PASTE, m_activeView->CanPaste() ? TRUE : FALSE);
+	}
+
 	return FALSE;
 }
 
@@ -113,6 +123,9 @@ LRESULT MainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
 	if (m_bOneInstance)
 		return 0;
 	// vds: <<
+
+	ControlsSettings&	controlsSettings= g_settingsHandler->GetAppearanceSettings().controlsSettings;
+	PositionSettings&	positionSettings= g_settingsHandler->GetAppearanceSettings().positionSettings;
 
 	// create command bar window
 	HWND hWndCmdBar = m_CmdBar.Create(m_hWnd, rcDefault, NULL, ATL_SIMPLE_CMDBAR_PANE_STYLE);
@@ -147,7 +160,11 @@ LRESULT MainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
 	UpdateTabsMenu(m_CmdBar.GetMenu(), m_tabsMenu);
 	SetReflectNotifications(true);
 //	SetTabStyles(CTCS_TOOLTIPS | CTCS_DRAGREARRANGE | CTCS_SCROLL | CTCS_CLOSEBUTTON | CTCS_BOLDSELECTEDTAB);
-	CreateTabWindow(m_hWnd, rcDefault, CTCS_TOOLTIPS | CTCS_DRAGREARRANGE | CTCS_SCROLL | CTCS_CLOSEBUTTON | CTCS_BOLDSELECTEDTAB);
+
+	DWORD dwTabStyles = CTCS_TOOLTIPS | CTCS_DRAGREARRANGE | CTCS_SCROLL | CTCS_CLOSEBUTTON | CTCS_BOLDSELECTEDTAB;
+	if (controlsSettings.bTabsOnBottom) dwTabStyles |= CTCS_BOTTOM;
+	
+	CreateTabWindow(m_hWnd, rcDefault, dwTabStyles);
 
 	// create initial console window(s)
 	if (m_startupTabs.size() == 0)
@@ -197,11 +214,9 @@ LRESULT MainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
 	UISetCheck(ID_VIEW_TOOLBAR, 1);
 	UISetCheck(ID_VIEW_TABS, 1);
 	UISetCheck(ID_VIEW_STATUS_BAR, 1);
+	UISetBlockAccelerators(true);
 
 	SetWindowStyles();
-
-	ControlsSettings&	controlsSettings= g_settingsHandler->GetAppearanceSettings().controlsSettings;
-	PositionSettings&	positionSettings= g_settingsHandler->GetAppearanceSettings().positionSettings;
 
 	ShowMenu(controlsSettings.bShowMenu ? TRUE : FALSE);
 	ShowToolbar(controlsSettings.bShowToolbar ? TRUE : FALSE);
@@ -237,6 +252,7 @@ LRESULT MainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
 		if ((positionSettings.nY < nDesktopTop) || (positionSettings.nY > nDesktopBottom)) positionSettings.nY = 50;
 	}
 
+	SetTransparency();
 	SetWindowPos(NULL, positionSettings.nX, positionSettings.nY, 0, 0, dwFlags);
 	DockWindow(positionSettings.dockPosition);
 	SetZOrder(positionSettings.zOrder);
@@ -247,13 +263,11 @@ LRESULT MainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
 	}
 	SetWindowText(m_strWindowTitle);
 
+	if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon) SetTrayIcon(NIM_ADD);
 	SetWindowIcons();
 
 	CreateAcceleratorTable();
 	RegisterGlobalHotkeys();
-
-	SetTransparency();
-	if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon /*&& !m_bOneInstance*/) SetTrayIcon(NIM_ADD); // vds:
 
 	AdjustWindowSize(false);
 
@@ -336,11 +350,12 @@ LRESULT MainFrame::OnClose(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, 
 		it->second->DestroyWindow();
 	}
 
-	if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon /*&& !m_bOneInstance*/) SetTrayIcon(NIM_DELETE); // vds:
+	if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon) SetTrayIcon(NIM_DELETE);
 
 	UnregisterGlobalHotkeys();
 
-	bHandled = false;
+	DestroyWindow();
+	PostQuitMessage(0);
 	return 0;
 }
 
@@ -355,7 +370,7 @@ LRESULT MainFrame::OnActivateApp(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/
 
 	BOOL bActivating = static_cast<BOOL>(wParam);
 
-	if (m_activeView.get() == NULL) return 0;
+	if (!m_activeView) return 0;
 
 	m_activeView->SetAppActiveStatus(bActivating ? true : false);
 
@@ -482,7 +497,7 @@ LRESULT MainFrame::OnHotKey(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOO
 
 //////////////////////////////////////////////////////////////////////////////
 
-LRESULT MainFrame::OnSysKeydown(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
+LRESULT MainFrame::OnSysKeydown(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
 /*
 	if ((wParam == VK_SPACE) && (lParam & (0x1 << 29)))
@@ -532,7 +547,7 @@ LRESULT MainFrame::OnGetMinMaxInfo(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lPar
 
 	CRect					maxClientRect;
 
-	if ((m_activeView.get() == NULL) || (!m_activeView->GetMaxRect(maxClientRect)))
+	if (!(m_activeView) || (!m_activeView->GetMaxRect(maxClientRect)))
 	{
 		bHandled = false;
 		return 1;
@@ -558,7 +573,7 @@ LRESULT MainFrame::OnGetMinMaxInfo(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lPar
 
 //////////////////////////////////////////////////////////////////////////////
 
-LRESULT MainFrame::OnSize(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled)
+LRESULT MainFrame::OnSize(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
 	// vds: >>
 	if (m_bOneInstance)
@@ -668,7 +683,10 @@ LRESULT MainFrame::OnWindowPosChanging(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM 
 			CPoint	pointCursor;
 
 			// we'll snap Console window to the desktop edges
-			::GetCursorPos(&pointCursor);
+
+			// WM_WINDOWPOSCHANGING will be called when locking a computer
+			// GetCursorPos will fail in that case; in that case we return and prevent invalid window position after unlock
+			if (!::GetCursorPos(&pointCursor)) return 0;
 			GetWindowRect(&rectWindow);
 			Helpers::GetDesktopRect(pointCursor, rectDesktop);
 			Helpers::GetMonitorRect(m_hWnd, rectMonitor);
@@ -716,13 +734,13 @@ LRESULT MainFrame::OnWindowPosChanging(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM 
 
 		if (m_activeView.get() != NULL)
 		{
-				CRect rectClient;
-				GetClientRect(&rectClient);
+			CRect rectClient;
+			GetClientRect(&rectClient);
 
-				// we need to invalidate client rect here for proper background 
-				// repaint when using relative backgrounds
-				InvalidateRect(&rectClient, FALSE);
-				m_activeView->MainframeMoving();
+			m_activeView->MainframeMoving();
+			// we need to invalidate client rect here for proper background 
+			// repaint when using relative backgrounds
+			InvalidateRect(&rectClient, FALSE);
 		}
 
 		return 0;
@@ -783,7 +801,7 @@ LRESULT MainFrame::OnMouseMove(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, 
 
 //////////////////////////////////////////////////////////////////////////////
 
-LRESULT MainFrame::OnExitSizeMove(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+LRESULT MainFrame::OnExitSizeMove(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 {
 	ResizeWindow();
 	return 0;
@@ -817,93 +835,176 @@ LRESULT MainFrame::OnTimer(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL
 
 //////////////////////////////////////////////////////////////////////////////
 
-LRESULT MainFrame::OnSettingChange(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
+LRESULT MainFrame::OnSettingChange(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
 {
 	if (lParam == 0) return 0;
 
 	wstring strArea(reinterpret_cast<wchar_t*>(lParam));
 
-	if(wParam == SPI_SETDESKWALLPAPER)
-	{
-		g_imageHandler->ReloadDesktopImages();
-//		m_activeView->Invalidate();
-		if (m_activeView.get() != NULL)
-			m_activeView->Repaint(TRUE);
-	}
-	else if (strArea == L"Windows")
-	{
-		g_imageHandler->ReloadDesktopImages();
-//		m_activeView->Invalidate();
-		if (m_activeView.get() != NULL)
-			m_activeView->Repaint(TRUE);
-	}
-	else if (strArea == L"Environment")
+	// according to WM_SETTINGCHANGE doc:
+	// to change environment, lParam should be "Environment"
+	if (strArea == L"Environment")
 	{
 		ConsoleHandler::UpdateEnvironmentBlock();
+	}
+	else
+	{
+		// otherwise, we don't know what has changed
+		// technically, we can skip reloading for "Policy" and "intl", but
+		// hopefully they don't happen often, so reload everything
+		g_imageHandler->ReloadDesktopImages();
+
+		// can't use Invalidate because full repaint is in order
+		m_activeView->Repaint(true);
 	}
 
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
 
 //////////////////////////////////////////////////////////////////////////////
-#ifdef USE_COPYDATA_MSG
-LRESULT MainFrame::OnCopyData(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
+
+//////////////////////////////////////////////////////////////////////////////
+// vds: >>
+void MainFrame::CreateNewTab(wchar_t *lpstrCmdLine)
 {
-//	MessageBox(L"WM_COPYDATA received",L"Info",MB_OK|MB_ICONINFORMATION);
-	COPYDATASTRUCT	*pCD = (COPYDATASTRUCT*)lParam;
-	if(!pCD) return 0;
-	// analyze command
-	switch(pCD->dwData){
-	case eEC_NewTab:///< create new tab
-		{
-			// check
-			if(pCD->cbData<sizeof(ECNewTabParams)) return 0;
-			ECNewTabParams	*pPrm = (ECNewTabParams*)pCD->lpData;
-			if((sizeof(ECNewTabParams)+pPrm->nTabNameSize+pPrm->nStartDirSize+pPrm->nStartCmdSize)>pCD->cbData) return 0;
-/* DEBUG
-			wchar_t	tbuf[2048];
-			swprintf_s(tbuf,2046,L"tab: \"%s\"\ndir: \"%s\"\ncmd: \"%s\"",pPrm->szTabName,&pPrm->szTabName[pPrm->nTabNameSize],&pPrm->szTabName[pPrm->nTabNameSize+pPrm->nStartDirSize]);
-			MessageBox(tbuf,L"New Tab",MB_OK|MB_ICONINFORMATION);
-*/
-			// add new tab
-			TabSettings&	tabSettings = g_settingsHandler->GetTabSettings();
-			// find tab with corresponding name...
-			for (size_t i = 0; i < tabSettings.tabDataVector.size(); ++i)
-			{
-				wstring str = tabSettings.tabDataVector[i]->strTitle;
-				wstring	sNewTab(pPrm->szTabName);
-				if (tabSettings.tabDataVector[i]->strTitle == sNewTab)
-				{
-					// found it, create
+	wstring			strConfigFile(L"");
+	wstring			strWindowTitle(L"");
+	vector<wstring>	startupTabs;
+	vector<wstring>	startupDirs;
+	vector<wstring>	startupCmds;
+	int				nMultiStartSleep = 0;
+	wstring			strDbgCmdLine(L"");
+	WORD			iFlags = 0;
+
+	ParseCommandLine(
+		lpstrCmdLine, 
+		strConfigFile, 
+		strWindowTitle, 
+		startupTabs, 
+		startupDirs, 
+		startupCmds, 
+		nMultiStartSleep, 
+		strDbgCmdLine,
+		iFlags);
+
+	if ((g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bAllowMultipleInstances && !(iFlags & CLF_REUSE_PREV_INSTANCE)) || iFlags & CLF_FORCE_NEW_INSTANCE)
+	{
+		// If you allow multiple instance don't let explorer reuse an existing one.
+		TCHAR module[512];
+		GetModuleFileName(0, module, sizeof(module) / sizeof(TCHAR) - 1);
+
+		TCHAR command[1024];
+		_sntprintf_s(command, sizeof(command) / sizeof(TCHAR), _T("\"%s\" %s"), module, lpstrCmdLine);
+
+		STARTUPINFO StartupInfo;
+		memset(&StartupInfo, 0, sizeof(StartupInfo));
+		StartupInfo.cb = sizeof(STARTUPINFO);
+
+		PROCESS_INFORMATION ProcessInfo;
+
+		// vds: I would like to create a process that is not a child of the current process.
+		CreateProcess(NULL, command, NULL, NULL, FALSE, NULL, NULL, NULL, &StartupInfo, &ProcessInfo);
+	}
+	else
+	{
+		TabSettings &tabSettings = g_settingsHandler->GetTabSettings();
+		if (!startupTabs.size() && tabSettings.tabDataVector.size()) {
+			startupTabs.push_back(tabSettings.tabDataVector[0]->strTitle);
+		}
+
+		for (size_t j = 0; j < startupTabs.size(); ++j) {
+			wstring startupTab = startupTabs[j];
+
+			for (size_t i = 0; i < tabSettings.tabDataVector.size(); ++i) {
+				shared_ptr<TabData> tabData = tabSettings.tabDataVector[i];
+				wstring str = tabData->strTitle;
+
+				wstring startupDir = _T("");
+				if (j < startupDirs.size())
+					startupDir = startupDirs[j];
+
+				//MessageBox(startupDir.c_str(), _T("Startup Dir"), MB_OK);
+
+				wstring startupCmd = _T("");
+				if (j < startupCmds.size())
+					startupCmd = startupCmds[j];
+
+				ConsoleView *existingTab = NULL;
+
+				bool bReuseTab = g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bReuseTab;
+
+				if (iFlags & CLF_REUSE_PREV_TAB)
+					bReuseTab = true;
+
+				if (iFlags & CLF_FORCE_NEW_TAB)
+					bReuseTab = false;
+
+				if (bReuseTab)
+					existingTab = LookupTab(tabData, startupDir);
+
+				if (existingTab) {
+					DisplayTab(existingTab->m_hWnd, FALSE);
+				}
+				else if (tabSettings.tabDataVector[i]->strTitle == startupTab) {
+					// Found it, create
 					if (!CreateNewConsole(
-						static_cast<DWORD>(i), 
-						wstring(&pPrm->szTabName[pPrm->nTabNameSize]),
-						wstring(&pPrm->szTabName[pPrm->nTabNameSize+pPrm->nStartDirSize]),
-						wstring(L"")))
+						static_cast<DWORD>(i), // Tab index
+						wstring(startupDir), // Startup Dir
+						wstring(startupCmd), // Startup Cmd
+						wstring(strDbgCmdLine))) // Dbg CmdLine
 					{
-						return 0;
+						return;
 					}
 					break;
 				}
 			}
-			// bring window to front - not necessary
-			::ShowWindow(m_hWnd,SW_SHOWNORMAL);
-			::SetForegroundWindow(m_hWnd);
-			::SetActiveWindow(m_hWnd);
-//			::SetFocus(m_hWnd);
-//			::ShowWindow(m_hWnd,SW_RESTORE);
-//			::SendMessage(m_hWnd,WM_ACTIVATE,WA_ACTIVE,NULL);
+		}
+		// Restore the application if it has been minimized:
+		WINDOWPLACEMENT placement;
+		memset(&placement, 0, sizeof(WINDOWPLACEMENT));
+		placement.length = sizeof(WINDOWPLACEMENT);
+
+		GetWindowPlacement(&placement);
+		placement.flags = WPF_ASYNCWINDOWPLACEMENT;
+		placement.showCmd = SW_RESTORE;
+		SetWindowPlacement(&placement);
+
+		SetFocus();
+	}
+}
+// vds: >>
+//////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////
+// vds: >>
+#ifdef USE_COPYDATA_MSG
+LRESULT MainFrame::OnCopyData(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
+{
+	//MessageBox(L"WM_COPYDATA received",L"Info",MB_OK|MB_ICONINFORMATION);
+	COPYDATASTRUCT *pCD = (COPYDATASTRUCT*)lParam;
+	if (!pCD)
+		return 0;
+
+	// Analyze command
+	switch (pCD->dwData) {
+	case eEC_NewTab:
+		// Create new tab
+		{
+			wchar_t *lpstrCmdLine = reinterpret_cast<wchar_t*>(pCD->lpData);
+
+			CreateNewTab(lpstrCmdLine);
 		}
 		break;
-	default:///< unknown command
+
+	default:
+		// Unknown command
 		return 0;
 	}
 	return 1;
 }
 #endif
+// vds: <<
 //////////////////////////////////////////////////////////////////////////////
 
 
@@ -951,11 +1052,7 @@ LRESULT MainFrame::OnUpdateTitles(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*
 	{
 		CString	strTabTitle(consoleView->GetTitle());
 
-		if ((windowSettings.dwTrimTabTitles > 0) && (strTabTitle.GetLength() > static_cast<int>(windowSettings.dwTrimTabTitles)))
-		{
-			strTabTitle = strTabTitle.Left(windowSettings.dwTrimTabTitles) + CString(L"...");
-		}
-		UpdateTabText(consoleView->m_hWnd, strTabTitle);
+		UpdateTabTitle(consoleView, strTabTitle);
 
 		if ((m_strCmdLineWindowTitle.GetLength() == 0) &&
 			(windowSettings.bUseTabTitles) && 
@@ -963,7 +1060,7 @@ LRESULT MainFrame::OnUpdateTitles(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*
 		{
 			m_strWindowTitle = consoleView->GetTitle();
 			SetWindowText(m_strWindowTitle);
-			if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon /*&& !m_bOneInstance*/) SetTrayIcon(NIM_MODIFY); // vds:
+			if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon) SetTrayIcon(NIM_MODIFY);
 		}
 	}
 	else
@@ -990,16 +1087,12 @@ LRESULT MainFrame::OnUpdateTitles(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*
 			if (windowSettings.bShowCommand)	m_strWindowTitle += strCommandText;
 
 			SetWindowText(m_strWindowTitle);
-			if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon /*&& !m_bOneInstance*/) SetTrayIcon(NIM_MODIFY); // vds:
+			if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon) SetTrayIcon(NIM_MODIFY);
 		}
 		
 		if (windowSettings.bShowCommandInTabs) strTabTitle += strCommandText;
 
-		if ((windowSettings.dwTrimTabTitles > 0) && (strTabTitle.GetLength() > static_cast<int>(windowSettings.dwTrimTabTitles)))
-		{
-			strTabTitle = strTabTitle.Left(windowSettings.dwTrimTabTitles) + CString(L"...");
-		}
-		UpdateTabText(consoleView->m_hWnd, strTabTitle);
+		UpdateTabTitle(consoleView, strTabTitle);
 	}
 
 	return 0;
@@ -1151,7 +1244,7 @@ LRESULT MainFrame::OnTabChanged(int /*idCtrl*/, LPNMHDR pnmh, BOOL& bHandled)
 		}
 	}
 
-	if (appearanceSettings.stylesSettings.bTrayIcon /*&& !m_bOneInstance*/) SetTrayIcon(NIM_MODIFY); // vds:
+	if (appearanceSettings.stylesSettings.bTrayIcon) SetTrayIcon(NIM_MODIFY);
 	
 	if (appearanceSettings.windowSettings.bUseTabTitles && (m_activeView.get() != NULL))
 	{
@@ -1189,7 +1282,8 @@ LRESULT MainFrame::OnTabMiddleClick(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandl
 
 	if (pTabItem == NULL)
 	{
-		CreateNewConsole(0);
+		wstring startupDir = m_activeView->GetWorkingDir(); // vds: New tab with same working dir
+		CreateNewConsole(0, startupDir);  // vds: New tab with same working dir
 	}
 	else
 	{
@@ -1235,13 +1329,14 @@ LRESULT MainFrame::OnToolbarDropDown(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*b
 
 LRESULT MainFrame::OnFileNewTab(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
+	wstring startupDir = m_activeView->GetWorkingDir(); // vds: New tab with same working dir
 	if (wID == ID_FILE_NEW_TAB)
 	{
-		CreateNewConsole(0);
+		CreateNewConsole(0, startupDir); // vds: New tab with same working dir
 	}
 	else
 	{
-		CreateNewConsole(wID-ID_NEW_TAB_1);
+		CreateNewConsole(wID-ID_NEW_TAB_1, startupDir); // vds: New tab with same working dir
 	}
 	
 	return 0;
@@ -1323,7 +1418,7 @@ LRESULT MainFrame::OnFileExit(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl
 
 LRESULT MainFrame::OnPaste(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
-	if (m_activeView.get() == NULL) return 0;
+	if (!m_activeView) return 0;
 
 	m_activeView->Paste();
 
@@ -1337,7 +1432,7 @@ LRESULT MainFrame::OnPaste(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/,
 
 LRESULT MainFrame::OnEditCopy(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
-	if (m_activeView.get() == NULL) return 0;
+	if (!m_activeView) return 0;
 
 	m_activeView->Copy();
 
@@ -1351,7 +1446,7 @@ LRESULT MainFrame::OnEditCopy(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl
 
 LRESULT MainFrame::OnEditClearSelection(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
-	if (m_activeView.get() == NULL) return 0;
+	if (!m_activeView) return 0;
 
 	m_activeView->ClearSelection();
 
@@ -1365,7 +1460,7 @@ LRESULT MainFrame::OnEditClearSelection(WORD /*wNotifyCode*/, WORD /*wID*/, HWND
 
 LRESULT MainFrame::OnEditPaste(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
-	if (m_activeView.get() == NULL) return 0;
+	if (!m_activeView) return 0;
 
 	m_activeView->Paste();
 
@@ -1379,7 +1474,7 @@ LRESULT MainFrame::OnEditPaste(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCt
 
 LRESULT MainFrame::OnEditStopScrolling(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
-	if (m_activeView.get() == NULL) return 0;
+	if (!m_activeView) return 0;
 
 	m_activeView->GetConsoleHandler().StopScrolling();
 
@@ -1393,25 +1488,21 @@ LRESULT MainFrame::OnEditStopScrolling(WORD /*wNotifyCode*/, WORD /*wID*/, HWND 
 
 LRESULT MainFrame::OnEditRenameTab(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
-	if (m_activeView.get() == NULL) return 0;
+	if (!m_activeView) return 0;
 
 	DlgRenameTab dlg(m_activeView->GetTitle());
 
 	if (dlg.DoModal() == IDOK)
 	{
-		WindowSettings&			windowSettings	= g_settingsHandler->GetAppearanceSettings().windowSettings;
 	
 		m_activeView->SetTitle(dlg.m_strTabName);
 
-		CString	strTabTitle(dlg.m_strTabName);
+		WindowSettings& windowSettings = g_settingsHandler->GetAppearanceSettings().windowSettings;
+		CString			strTabTitle(dlg.m_strTabName);
 
 		if (windowSettings.bShowCommandInTabs) strTabTitle += m_activeView->GetConsoleCommand();
 
-		if ((windowSettings.dwTrimTabTitles > 0) && (strTabTitle.GetLength() > static_cast<int>(windowSettings.dwTrimTabTitles)))
-		{
-			strTabTitle = strTabTitle.Left(windowSettings.dwTrimTabTitles) + CString(L"...");
-		}
-		UpdateTabText(*m_activeView, strTabTitle);
+		UpdateTabTitle(m_activeView, strTabTitle);
 
 		if (windowSettings.bUseTabTitles) SetWindowText(m_activeView->GetTitle());
 	}
@@ -1426,7 +1517,7 @@ LRESULT MainFrame::OnEditRenameTab(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hW
 
 LRESULT MainFrame::OnEditSettings(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
-	if (m_activeView.get() == NULL) return 0;
+	if (!m_activeView) return 0;
 
 	DlgSettingsMain dlg;
 
@@ -1444,7 +1535,7 @@ LRESULT MainFrame::OnEditSettings(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWn
 		SetTransparency();
 
 		// tray icon
-		if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon /*&& !m_bOneInstance*/) // vds:
+		if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon)
 		{
 			SetTrayIcon(NIM_ADD);
 		}
@@ -1567,7 +1658,7 @@ LRESULT MainFrame::OnAppAbout(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl
 
 LRESULT MainFrame::OnDumpBuffer(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
-	if (m_activeView.get() == NULL) return 0;
+	if (!m_activeView) return 0;
 
 	m_activeView->DumpBuffer();
 
@@ -1643,7 +1734,7 @@ void MainFrame::AdjustWindowRect(CRect& rect)
 void MainFrame::AdjustAndResizeConsoleView(CRect& rectView)
 {
 	// adjust the active view
-//	if (m_activeView.get() == NULL) return;
+//	if (!m_activeView) return;
 
 
 //	GetClientRect(&rectView);
@@ -1676,7 +1767,7 @@ void MainFrame::AdjustAndResizeConsoleView(CRect& rectView)
 * /
 
 	// adjust the active view
-	if (m_activeView.get() == NULL) return;
+	if (!m_activeView) return;
 
 	m_activeView->AdjustRectAndResize(rectView);
 	
@@ -1729,21 +1820,53 @@ bool MainFrame::CreateNewConsole(DWORD dwTabIndex, const wstring& strStartupDir 
 		m_dwColumns	= dwColumns;
 	}
 
+	shared_ptr<TabData> tabData = g_settingsHandler->GetTabSettings().tabDataVector[dwTabIndex];
+
 	shared_ptr<ConsoleView> consoleView(new ConsoleView(*this, dwTabIndex, strStartupDir, strStartupCmd, strDbgCmdLine, dwRows, dwColumns));
+	UserCredentials			userCredentials;
+
+	if (tabData->bRunAsUser)
+	{
+		DlgCredentials dlg(tabData->strUser.c_str());
+
+		if (dlg.DoModal() != IDOK) return false;
+
+		userCredentials.user	= dlg.GetUser();
+		userCredentials.password= dlg.GetPassword();
+	}
 
 	HWND hwndConsoleView = consoleView->Create(
 											m_hWnd, 
 											rcDefault, 
 											NULL, 
 											WS_CHILD | WS_VISIBLE,// | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 
-											0);
+											0,
+											0U,
+											reinterpret_cast<void*>(&userCredentials));
 
 	if (hwndConsoleView == NULL)
 	{
-		CString	strMessage;
+		CString	strMessage(consoleView->GetExceptionMessage());
+				
+		if (strMessage.GetLength() == 0)
+		{
+			// copied from ConsoleView::OnCreate
+			wstring strShell;
+			if (strDbgCmdLine.length() > 0)
+			{
+				strShell	= strDbgCmdLine;
+			}
+			else if (tabData->strShell.length() > 0)
+			{
+				strShell	= tabData->strShell;
+			}
+			// end of copy from ConsoleView::OnCreate
+	 
+			strMessage.Format(IDS_TAB_CREATE_FAILED, g_settingsHandler->GetTabSettings().tabDataVector[dwTabIndex]->strTitle.c_str(), strShell.c_str());
+		}
 
-		strMessage.Format(IDS_TAB_CREATE_FAILED, g_settingsHandler->GetTabSettings().tabDataVector[dwTabIndex]->strTitle.c_str());
-		::MessageBox(m_hWnd, strMessage, L"Error", MB_OK|MB_ICONERROR);
+ 		::MessageBox(m_hWnd, strMessage, L"Error", MB_OK|MB_ICONERROR);
+
 		return false;
 	}
 
@@ -1808,6 +1931,33 @@ void MainFrame::CloseTab(HWND hwndConsoleView)
 
 //////////////////////////////////////////////////////////////////////////////
 
+void MainFrame::UpdateTabTitle(const shared_ptr<ConsoleView>& consoleView, CString& strTabTitle)
+{
+	// we always set the tool tip text to the complete, untrimmed title
+	UpdateTabToolTip(*consoleView, strTabTitle);
+
+	WindowSettings& windowSettings = g_settingsHandler->GetAppearanceSettings().windowSettings;
+
+	if 
+	(
+		(windowSettings.dwTrimTabTitles > 0) 
+		&& 
+		(windowSettings.dwTrimTabTitles > windowSettings.dwTrimTabTitlesRight) 
+		&& 
+		(strTabTitle.GetLength() > static_cast<int>(windowSettings.dwTrimTabTitles))
+	)
+	{
+		strTabTitle = strTabTitle.Left(windowSettings.dwTrimTabTitles - windowSettings.dwTrimTabTitlesRight) + CString(L"...") + strTabTitle.Right(windowSettings.dwTrimTabTitlesRight);
+	}
+	
+	UpdateTabText(*consoleView, strTabTitle);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+
 void MainFrame::UpdateTabsMenu(CMenuHandle mainMenu, CMenu& tabsMenu)
 {
 	if (!tabsMenu.IsNull()) tabsMenu.DestroyMenu();
@@ -1821,26 +1971,73 @@ void MainFrame::UpdateTabsMenu(CMenuHandle mainMenu, CMenu& tabsMenu)
 	for (it; it != tabDataVector.end(); ++it, ++dwId)
 	{
 		CMenuItemInfo	subMenuItem;
-/*
-		ICONINFO		iconInfo;
-		BITMAP			bmp;
-
-		::GetIconInfo(tabDataVector[dwId-ID_NEW_TAB_1]->tabSmallIcon, &iconInfo);
-		::GetObject(iconInfo.hbmColor, sizeof(BITMAP), &bmp);
-*/
 
 		subMenuItem.fMask		= MIIM_STRING | MIIM_ID;
-/*
-		subMenuItem.fMask		= MIIM_BITMAP | MIIM_ID | MIIM_TYPE;
-		subMenuItem.fType		= MFT_BITMAP;
-*/
 		subMenuItem.wID			= dwId;
-//		subMenuItem.hbmpItem	= iconInfo.hbmColor;
 		subMenuItem.dwTypeData	= const_cast<wchar_t*>((*it)->strTitle.c_str());
 		subMenuItem.cch			= static_cast<UINT>((*it)->strTitle.length());
 
 		tabsMenu.InsertMenuItem(dwId-ID_NEW_TAB_1, TRUE, &subMenuItem);
-//		tabsMenu.SetMenuItemBitmaps(dwId, MF_BYCOMMAND, iconInfo.hbmColor, NULL);
+
+		// create menu icons with proper transparency (thanks to chrisz for the patch)
+		CIcon tabSmallIcon;
+		
+		if ((*it)->bUseDefaultIcon || ((*it)->strIcon.length() > 0))
+		{
+			if ((*it)->menuBitmap.IsNull())
+			{
+
+				if ((*it)->strIcon.length() > 0)
+				{
+					tabSmallIcon.Attach(
+						static_cast<HICON>(
+							::LoadImage(
+								NULL,
+								Helpers::ExpandEnvironmentStrings((*it)->strIcon).c_str(),
+								IMAGE_ICON,
+								16,
+								16,
+								LR_DEFAULTCOLOR|LR_LOADFROMFILE
+							)
+						)
+					);
+				}
+				else if ((*it)->bUseDefaultIcon)
+				{
+					tabSmallIcon.Attach(
+						static_cast<HICON>(
+							::LoadImage(
+								::GetModuleHandle(NULL),
+								MAKEINTRESOURCE(IDR_MAINFRAME),
+								IMAGE_ICON,
+								16,
+								16,
+								LR_DEFAULTCOLOR
+							)
+						)
+					);
+				}
+
+				CDC	dc;
+
+				(*it)->menuBitmap.CreateCompatibleBitmap(::GetDC(NULL), 16, 16);
+
+				dc.CreateCompatibleDC(::GetDC(NULL));
+				dc.SelectBitmap((*it)->menuBitmap);
+				dc.FillSolidRect(0, 0, 16, 16, ::GetSysColor(COLOR_MENU));
+				dc.DrawIconEx(0, 0, tabSmallIcon.m_hIcon, 16, 16);
+			}
+		}
+		else
+		{
+			// destroy icon bitmap
+			if (!(*it)->menuBitmap.IsNull()) (*it)->menuBitmap.DeleteObject();
+		}
+
+		if (!(*it)->menuBitmap.IsNull()) 
+		{
+			tabsMenu.SetMenuItemBitmaps(dwId, MF_BYCOMMAND, (*it)->menuBitmap, NULL);
+		}
 	}
 
 	// set tabs menu as popup submenu
@@ -1982,17 +2179,21 @@ void MainFrame::SetZOrder(ZOrder zOrder)
 		case zorderDesktop	: hwndZ = HWND_NOTOPMOST; break;
 	}
 
-	HWND hwndParent = NULL;
-
-	if (m_zOrder == zorderDesktop)
-	{
-		// pinned to the desktop, Program Manager is the parent
-		// TODO: automatic shell detection
-		hwndParent = ::FindWindow(L"Progman", L"Program Manager");
-	}
-
-	SetParent(hwndParent);
+	// if we're pinned to the desktop, desktop shell's main window is our parent
+	SetParent((m_zOrder == zorderDesktop) ? GetDesktopWindow() : NULL);
 	SetWindowPos(hwndZ, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+HWND MainFrame::GetDesktopWindow()
+{
+	// pinned to the desktop, Program Manager is the parent
+	// TODO: support more shells/automatic shell detection
+	return ::FindWindow(L"Progman", L"Program Manager");
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -2181,11 +2382,6 @@ void MainFrame::ResizeWindow()
 	{
 		AdjustWindowSize(true, false);
 	}
-	else
-	{// if window was not resized may be it has been moved, so update background image for active view
-		if (m_activeView.get() != NULL)
-			m_activeView->Repaint(TRUE);
-	}
 
 	SendMessage(WM_NULL, 0, 0);
 	m_dwResizeWindowEdge = WMSZ_BOTTOM;
@@ -2225,7 +2421,7 @@ void MainFrame::AdjustWindowSize(bool bResizeConsole, bool bMaxOrRestore /*= fal
 		}
 
 		// adjust the active view
-		if (m_activeView.get() == NULL) return;
+		if (!m_activeView) return;
 
 		// if we're being maximized, AdjustRectAndResize will use client rect supplied
 		m_activeView->AdjustRectAndResize(clientRect, m_dwResizeWindowEdge, !bMaxOrRestore);
@@ -2251,7 +2447,7 @@ void MainFrame::AdjustWindowSize(bool bResizeConsole, bool bMaxOrRestore /*= fal
 	}
 	else
 	{
-		if (m_activeView.get() == NULL) return;
+		if (!m_activeView) return;
 		CRect maxClientRect;
 		m_activeView->GetMaxRect(maxClientRect);
 		m_activeView->GetRect(clientRect);
@@ -2306,7 +2502,7 @@ void MainFrame::AdjustWindowSize(bool bResizeConsole, bool bMaxOrRestore /*= fal
 //		AdjustAndResizeConsoleView(clientRect);
 
 		// adjust the active view
-		if (m_activeView.get() == NULL) return;
+		if (!m_activeView) return;
 
 		m_activeView->AdjustRectAndResize(clientRect);
 		
@@ -2328,7 +2524,7 @@ void MainFrame::AdjustWindowSize(bool bResizeConsole, bool bMaxOrRestore /*= fal
 	}
 	else
 	{
-		if (m_activeView.get() == NULL) return;
+		if (!m_activeView) return;
 
 		m_activeView->GetRect(clientRect);
 	}
@@ -2361,9 +2557,13 @@ void MainFrame::SetTransparency()
 {
 	// set transparency
 	TransparencySettings& transparencySettings = g_settingsHandler->GetAppearanceSettings().transparencySettings;
+
 	switch (transparencySettings.transType)
 	{
 		case transAlpha : 
+
+			// if Console is pinned to the desktop window, wee need to set it as top-level window temporarily
+			if (m_zOrder == zorderDesktop) SetParent(NULL);
 
 			if ((transparencySettings.byActiveAlpha == 255) &&
 				(transparencySettings.byInactiveAlpha == 255))
@@ -2381,6 +2581,9 @@ void MainFrame::SetTransparency()
 				0, 
 				transparencySettings.byActiveAlpha, 
 				LWA_ALPHA);
+
+			// back to desktop-pinned mode, if needed
+			if (m_zOrder == zorderDesktop) SetParent(GetDesktopWindow());
 
 			break;
 
@@ -2534,15 +2737,17 @@ BOOL MainFrame::SetTrayIcon(DWORD dwMessage) {
 // vds: >>
 const TCHAR *DdeApplicationName = _T("Console");
 
-LRESULT MainFrame::OnSendDdeCommand(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
+LRESULT MainFrame::OnSendDdeCommand(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
 {
+	HWND hPrevConsole = reinterpret_cast<HWND>(wParam);
 	LPTSTR lpstrCmdLine = reinterpret_cast<LPTSTR>(lParam);
-	SendDdeExecuteCommand(lpstrCmdLine);
+	
+	SendDdeExecuteCommand(hPrevConsole, lpstrCmdLine);
 
 	return 0L;
 }
 
-bool MainFrame::SendDdeExecuteCommand(LPTSTR lpstrCmdLine)
+bool MainFrame::SendDdeExecuteCommand(HWND hPrevConsole, LPTSTR lpstrCmdLine)
 {
 	m_hDdeServerWnd = NULL;
 
@@ -2552,7 +2757,14 @@ bool MainFrame::SendDdeExecuteCommand(LPTSTR lpstrCmdLine)
 	LPARAM lParam = MAKELPARAM(applicationAtom, topicAtom);
 
 	m_currentDdeMsg = WM_DDE_INITIATE;
-	::SendMessage(HWND_BROADCAST, WM_DDE_INITIATE, reinterpret_cast<WPARAM>(m_hWnd), lParam); 
+	//::SendMessageTimeout(HWND_BROADCAST, WM_DDE_INITIATE, reinterpret_cast<WPARAM>(m_hWnd), lParam, SMTO_NORMAL, 1000, NULL);
+	//hPrevConsole = 0;
+	if (hPrevConsole) {
+		::SendMessage(hPrevConsole, WM_DDE_INITIATE, reinterpret_cast<WPARAM>(m_hWnd), lParam); 
+	}
+	else {
+		::SendMessage(HWND_BROADCAST, WM_DDE_INITIATE, reinterpret_cast<WPARAM>(m_hWnd), lParam); 
+	}
     
 	GlobalDeleteAtom(applicationAtom); 
     GlobalDeleteAtom(topicAtom);
@@ -2647,8 +2859,8 @@ LRESULT MainFrame::OnDdeAck(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /
 		m_currentDdeMsg = 0;
 
 		// vds: UnpackDDElParam should be used for posted message
-		UINT low;
-		UINT high;
+		UINT_PTR low;
+		UINT_PTR high;
 		UnpackDDElParam(WM_DDE_ACK, lParam, &low, &high);
 		//WORD ack = static_cast<WORD>(low);
 		DDEACK ret = *reinterpret_cast<DDEACK*>(&low);
@@ -2726,11 +2938,19 @@ LRESULT MainFrame::OnDdeInitiate(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BO
 #endif
 
 	acceptedApplicationAtom = GlobalAddAtom(DdeApplicationName);
-	acceptedTopicAtom = GlobalAddAtom(_T("System"));
+	if (acceptedApplicationAtom) {
+		acceptedTopicAtom = GlobalAddAtom(_T("System"));
 
-	// vds: PackDDElParam should be used for the posted message (here we sent a message)
-	LPARAM responseLParam = MAKELPARAM(acceptedApplicationAtom, acceptedTopicAtom);
-	::SendMessage(reinterpret_cast<HWND>(wParam), WM_DDE_ACK, reinterpret_cast<WPARAM>(m_hWnd), responseLParam);
+		if (acceptedTopicAtom) {
+			// vds: PackDDElParam should be used for the posted message (here we sent a message)
+			LPARAM responseLParam = MAKELPARAM(acceptedApplicationAtom, acceptedTopicAtom);
+			::SendMessage(reinterpret_cast<HWND>(wParam), WM_DDE_ACK, reinterpret_cast<WPARAM>(m_hWnd), responseLParam);
+
+			GlobalDeleteAtom(acceptedTopicAtom);
+		}
+
+		GlobalDeleteAtom(acceptedApplicationAtom);
+	}
 
 	return 0L;
 }
@@ -2773,110 +2993,8 @@ LRESULT MainFrame::OnDdeExecute(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOO
 			MessageBox(buf, _T("Received Message"), MB_OK);
 #endif
 
-			wstring			strConfigFile(L"");
-			wstring			strWindowTitle(L"");
-			vector<wstring>	startupTabs;
-			vector<wstring>	startupDirs;
-			vector<wstring>	startupCmds;
-			int				nMultiStartSleep = 0;
-			wstring			strDbgCmdLine(L"");
-			WORD			iFlags = 0;
-
-			ParseCommandLine(
-				lpstrCmdLine, 
-				strConfigFile, 
-				strWindowTitle, 
-				startupTabs, 
-				startupDirs, 
-				startupCmds, 
-				nMultiStartSleep, 
-				strDbgCmdLine,
-				iFlags);
-
-			if ((g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bAllowMultipleInstances && !(iFlags & CLF_REUSE_PREV_INSTANCE)) || iFlags & CLF_FORCE_NEW_INSTANCE)
-			{
-				// If you allow multiple instance don't let explorer reuse an existing one.
-				TCHAR module[512];
-				GetModuleFileName(0, module, sizeof(module) / sizeof(TCHAR) - 1);
-
-				TCHAR command[1024];
-				_sntprintf_s(command, sizeof(command) / sizeof(TCHAR), _T("\"%s\" %s"), module, lpstrCmdLine);
-
-				STARTUPINFO StartupInfo;
-				memset(&StartupInfo, 0, sizeof(StartupInfo));
-				StartupInfo.cb = sizeof(STARTUPINFO);
-
-				PROCESS_INFORMATION ProcessInfo;
-
-				// vds: I would like to create a process that is not a child of the current process.
-				CreateProcess(NULL, command, NULL, NULL, FALSE, NULL, NULL, NULL, &StartupInfo, &ProcessInfo);
-			}
-			else
-			{
-				TabSettings &tabSettings = g_settingsHandler->GetTabSettings();
-				if (!startupTabs.size() && tabSettings.tabDataVector.size()) {
-					startupTabs.push_back(tabSettings.tabDataVector[0]->strTitle);
-				}
-
-				for (size_t j = 0; j < startupTabs.size(); ++j) {
-					wstring startupTab = startupTabs[j];
-
-					for (size_t i = 0; i < tabSettings.tabDataVector.size(); ++i) {
-						shared_ptr<TabData> tabData = tabSettings.tabDataVector[i];
-						wstring str = tabData->strTitle;
-
-						wstring startupDir = _T("");
-						if (j < startupDirs.size())
-							startupDir = startupDirs[j];
-
-						//MessageBox(startupDir.c_str(), _T("Startup Dir"), MB_OK);
-
-						wstring startupCmd = _T("");
-						if (j < startupCmds.size())
-							startupCmd = startupCmds[j];
-
-						ConsoleView *existingTab = NULL;
-
-						bool bReuseTab = g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bReuseTab;
-
-						if (iFlags & CLF_REUSE_PREV_TAB)
-							bReuseTab = true;
-
-						if (iFlags & CLF_FORCE_NEW_TAB)
-							bReuseTab = false;
-
-						if (bReuseTab)
-							existingTab = LookupTab(tabData, startupDir);
-
-						if (existingTab) {
-							DisplayTab(existingTab->m_hWnd, FALSE);
-						}
-						else if (tabSettings.tabDataVector[i]->strTitle == startupTab) {
-							// Found it, create
-							if (!CreateNewConsole(
-								static_cast<DWORD>(i), // Tab index
-								wstring(startupDir), // Startup Dir
-								wstring(startupCmd), // Startup Cmd
-								wstring(strDbgCmdLine))) // Dbg CmdLine
-							{
-								return 0L;
-							}
-							break;
-						}
-					}
-				}
-				// Restore the application if it has been minimized:
-				WINDOWPLACEMENT placement;
-				memset(&placement, 0, sizeof(WINDOWPLACEMENT));
-				placement.length = sizeof(WINDOWPLACEMENT);
-
-				GetWindowPlacement(&placement);
-				placement.flags = WPF_ASYNCWINDOWPLACEMENT;
-				placement.showCmd = SW_RESTORE;
-				SetWindowPlacement(&placement);
-
-				SetFocus();
-			}
+			CreateNewTab(lpstrCmdLine);
+			
 			GlobalUnlock(hData);
 		}
 	}

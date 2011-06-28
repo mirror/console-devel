@@ -249,3 +249,48 @@ void PageSettingsTabs2::EnableControls()
 }
 
 //////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+void PageSettingsTabs2::Load(shared_ptr<TabData>& tabData)
+{
+	m_tabData		= tabData;
+
+	m_nBkType		= static_cast<int>(m_tabData->backgroundImageType);
+	m_strBkImage	= m_tabData->imageData.strFilename.c_str();
+	m_nRelative		= m_tabData->imageData.bRelative ? 1 : 0;
+	m_nExtend		= m_tabData->imageData.bExtend ? 1 : 0;
+
+	m_comboBkPosition.SetCurSel(static_cast<int>(m_tabData->imageData.imagePosition));
+
+	m_sliderTintOpacity.SetPos(m_tabData->imageData.byTintOpacity);
+	UpdateSliderText();
+
+	m_staticBkColor.Invalidate();
+	m_staticTintColor.Invalidate();
+
+	DoDataExchange(DDX_LOAD);
+
+	EnableControls();
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+void PageSettingsTabs2::Save()
+{
+	DoDataExchange(DDX_SAVE);
+
+	m_tabData->backgroundImageType		= static_cast<BackgroundImageType>(m_nBkType);
+	m_tabData->imageData.strFilename	= m_strBkImage;
+	m_tabData->imageData.bRelative		= m_nRelative > 0;
+	m_tabData->imageData.bExtend		= m_nExtend > 0;
+
+	m_tabData->imageData.imagePosition	= static_cast<ImagePosition>(m_comboBkPosition.GetCurSel());
+	m_tabData->imageData.byTintOpacity	= static_cast<BYTE>(m_sliderTintOpacity.GetPos());
+}
+
+//////////////////////////////////////////////////////////////////////////////

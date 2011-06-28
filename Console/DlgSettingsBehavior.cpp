@@ -75,7 +75,13 @@ LRESULT DlgSettingsBehavior::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPAR
 
 	EnableScrollControls();
 	EnableFlashTabControls();
+
+	// vds: >>
+	if (!m_behaviorSettings.shellSettings.CouldIntegrateConsoleWithExplorer()) {
+		GetDlgItem(IDC_INTEGRATE_WITH_EXPLORER).EnableWindow(False);
+	}
 	EnableOnInstanceControls();
+	// vds: <<
 
 	return TRUE;
 }
@@ -157,26 +163,27 @@ LRESULT DlgSettingsBehavior::OnClickedFlashTab(WORD /*wNotifyCode*/, WORD /*wID*
 
 
 //////////////////////////////////////////////////////////////////////////////
-
+// vds: >>
 LRESULT DlgSettingsBehavior::OnClickedReuseTab(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
 	DoDataExchange(DDX_SAVE);
 	EnableOnInstanceControls();
 	return 0;
 }
-
+// vds: <<
 //////////////////////////////////////////////////////////////////////////////
 
 
 //////////////////////////////////////////////////////////////////////////////
 
+// vds: >>
 LRESULT DlgSettingsBehavior::OnClickedIntegrateWithExplorer(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
 	DoDataExchange(DDX_SAVE);
 	EnableOnInstanceControls();
 	return 0;
 }
-
+// vds: <<
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////

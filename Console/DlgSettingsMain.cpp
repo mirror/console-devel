@@ -11,7 +11,7 @@
 #include "DlgSettingsMouse.h"
 #include "DlgSettingsTabs.h"
 #include "DlgSettingsMain.h"
-#include "../shared/Constants.h"
+#include "../shared/Constants.h" // vds:
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -83,16 +83,25 @@ LRESULT DlgSettingsMain::OnCloseCmd(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndC
 		{
 			g_settingsHandler->SetUserDataDir((m_checkUserDataDir.GetCheck() == 1) ? SettingsHandler::dirTypeUser : SettingsHandler::dirTypeExe);
 		}
-		m_pSettingsDocument->save(CComVariant(g_settingsHandler->GetSettingsFileName().c_str()));
+		// vds: >>
+		HRESULT hr = m_pSettingsDocument->save(CComVariant(g_settingsHandler->GetSettingsFileName().c_str()));
+		if (hr != S_OK) {
+			// vds: If it is impossible to save the configuration where it has been found try to save it in the user setting folder.
+			g_settingsHandler->SetUserDataDir(SettingsHandler::dirTypeUser);
+			HRESULT hr = m_pSettingsDocument->save(CComVariant(g_settingsHandler->GetSettingsFileName().c_str()));
+		}
+		// vds: <<
 
-		// notify explorer integration object about configuration change
-		HANDLE	hConfigChange = CreateEvent(NULL,FALSE,FALSE,szConfigNotifyEventName);
-		if(hConfigChange)
+		// vds: >>
+		// Notify explorer integration object about configuration change
+		HANDLE hConfigChange = CreateEvent(NULL, FALSE ,FALSE, szConfigNotifyEventName);
+		if (hConfigChange)
 		{
-			if(GetLastError()==ERROR_ALREADY_EXISTS)
-				SetEvent(hConfigChange);	///< there is no sense to notify if nobody is listening
+			if (GetLastError() == ERROR_ALREADY_EXISTS)
+				SetEvent(hConfigChange);	// There is no sense to notify if nobody is listening
 			CloseHandle(hConfigChange);
 		}
+		// vds: <<
 	}
 
 	EndDialog(wID);

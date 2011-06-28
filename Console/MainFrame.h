@@ -14,7 +14,9 @@
 #define	TIMER_TIMEOUT			43 // vds: Time id used to kill the client of the DDE communication when the DDE server don't responds.
 #define	TIMER_SIZING_INTERVAL	100
 
-const WORD WM_SEND_DDE_COMMAND = WM_APP + 1;
+const WORD WM_SEND_DDE_COMMAND = WM_APP + 1; // vds:
+
+//#define USE_COPYDATA_MSG // vds
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -53,6 +55,9 @@ class MainFrame
 		virtual BOOL OnIdle();
 
 		BEGIN_UPDATE_UI_MAP(MainFrame)
+			UPDATE_ELEMENT(ID_EDIT_COPY, UPDUI_MENUPOPUP)
+			UPDATE_ELEMENT(ID_EDIT_CLEAR_SELECTION, UPDUI_MENUPOPUP)
+			UPDATE_ELEMENT(ID_EDIT_PASTE, UPDUI_MENUPOPUP)
 			UPDATE_ELEMENT(ID_VIEW_MENU, UPDUI_MENUPOPUP)
 			UPDATE_ELEMENT(ID_VIEW_TOOLBAR, UPDUI_MENUPOPUP)
 			UPDATE_ELEMENT(ID_VIEW_TABS, UPDUI_MENUPOPUP)
@@ -81,9 +86,11 @@ class MainFrame
 			MESSAGE_HANDLER(WM_EXITSIZEMOVE, OnExitSizeMove)
 			MESSAGE_HANDLER(WM_TIMER, OnTimer)
 			MESSAGE_HANDLER(WM_SETTINGCHANGE, OnSettingChange)
+// vds: >>			
 #ifdef USE_COPYDATA_MSG
 			MESSAGE_HANDLER(WM_COPYDATA, OnCopyData)
 #endif
+// vds: <<
 			MESSAGE_HANDLER(UM_CONSOLE_RESIZED, OnConsoleResized)
 			MESSAGE_HANDLER(UM_CONSOLE_CLOSED, OnConsoleClosed)
 			MESSAGE_HANDLER(UM_UPDATE_TITLES, OnUpdateTitles)
@@ -102,12 +109,16 @@ class MainFrame
 			NOTIFY_CODE_HANDLER(CTCN_MCLICK, OnTabMiddleClick);
 			NOTIFY_CODE_HANDLER(RBN_HEIGHTCHANGE, OnRebarHeightChanged)
 			NOTIFY_HANDLER(ATL_IDW_TOOLBAR, TBN_DROPDOWN, OnToolbarDropDown)
+			
+			CHAIN_MSG_MAP(CUpdateUI<MainFrame>)
+			
 			COMMAND_RANGE_HANDLER(ID_NEW_TAB_1, ID_NEW_TAB_1 + 99, OnFileNewTab)
 			COMMAND_ID_HANDLER(ID_FILE_NEW_TAB, OnFileNewTab)
 			COMMAND_RANGE_HANDLER(ID_SWITCH_TAB_1, ID_SWITCH_TAB_1 + 9, OnSwitchTab)
 			COMMAND_ID_HANDLER(ID_FILE_CLOSE_TAB, OnFileCloseTab)
 			COMMAND_ID_HANDLER(ID_NEXT_TAB, OnNextTab)
 			COMMAND_ID_HANDLER(ID_PREV_TAB, OnPrevTab)
+			COMMAND_ID_HANDLER(ID_FILE_CLOSE_TAB, OnFileCloseTab)
 			COMMAND_ID_HANDLER(ID_APP_EXIT, OnFileExit)
 			COMMAND_ID_HANDLER(ID_EDIT_COPY, OnEditCopy)
 			COMMAND_ID_HANDLER(ID_EDIT_CLEAR_SELECTION, OnEditClearSelection)
@@ -123,7 +134,7 @@ class MainFrame
 			COMMAND_ID_HANDLER(ID_HELP, OnHelp)
 			COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAppAbout)
 			COMMAND_ID_HANDLER(IDC_DUMP_BUFFER, OnDumpBuffer)
-			CHAIN_MSG_MAP(CUpdateUI<MainFrame>)
+			
 			CHAIN_MSG_MAP(CTabbedFrameImpl<MainFrame>)
 			REFLECT_NOTIFICATIONS()
 		END_MSG_MAP()
@@ -152,9 +163,11 @@ class MainFrame
 		LRESULT OnTimer(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 
 		LRESULT OnSettingChange(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/);
+// vds: >>		
 #ifdef USE_COPYDATA_MSG
 		LRESULT OnCopyData(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/);
 #endif
+// vds: <<
 		LRESULT OnConsoleResized(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /* bHandled */);
 		LRESULT OnConsoleClosed(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 		LRESULT OnUpdateTitles(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/);
@@ -212,7 +225,7 @@ class MainFrame
 		void AdjustWindowRect(CRect& rect);
 //		void AdjustAndResizeConsoleView(CRect& rectView);
 
-		bool SendDdeExecuteCommand(LPTSTR lpstrCmdLine); // vds:
+		bool SendDdeExecuteCommand(HWND hPrevConsole, LPTSTR lpstrCmdLine); // vds:
 
 	private:
 
@@ -220,11 +233,13 @@ class MainFrame
 		void CloseTab(CTabViewTabItem* pTabItem);
 		void CloseTab(HWND hwndConsoleView);
 
+		void UpdateTabTitle(const shared_ptr<ConsoleView>& consoleView, CString& strTabTitle);
 		void UpdateTabsMenu(CMenuHandle mainMenu, CMenu& tabsMenu);
 		void UpdateStatusBar();
 		void SetWindowStyles();
 		void DockWindow(DockPosition dockPosition);
 		void SetZOrder(ZOrder zOrder);
+		HWND GetDesktopWindow();
 
 		void SetWindowIcons();
 
@@ -245,6 +260,7 @@ class MainFrame
 		ConsoleView* LookupTab(shared_ptr<TabData> tabData, wstring startupDir); // vds: Reuse exising tab
 
 	private:
+		void CreateNewTab(wchar_t *lpstrCmdLine);
 
 		bool					m_bOnCreateDone;
 

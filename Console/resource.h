@@ -20,6 +20,7 @@
 #define IDD_SETTINGS_TABS_1             213
 #define IDD_SETTINGS_TABS_2             214
 #define IDD_SETTINGS_MOUSE              215
+#define IDD_CREDENTIALS                 216
 #define IDC_TAB_NAME                    1000
 #define IDC_APPLY                       1001
 #define IDC_TREE_SECTIONS               1002
@@ -123,6 +124,8 @@
 #define IDC_CHECK_HIDE_SCROLLBARS       1094
 #define IDC_CHECK_SHOW_SCROLLBARS       1094
 #define IDC_RADIO_DOCK_NONE             1095
+#define IDC_CHECK_SHOW_SCROLLBARS2      1095
+#define IDC_CHECK_FLAT_SCROLLBARS       1095
 #define IDC_RADIO_DOCK_TL               1096
 #define IDC_RADIO_DOCK_TR               1097
 #define IDC_RADIO_DOCK_BL               1098
@@ -130,6 +133,7 @@
 #define IDC_RADIO_Z_REGULAR             1100
 #define IDC_TRIM_TAB_TITLES             1101
 #define IDC_RADIO_Z_BOTTOM              1102
+#define IDC_TRIM_TAB_TITLES_RIGHT       1102
 #define IDC_RADIO_Z_ONTOP               1103
 #define IDC_SNAP                        1104
 #define IDC_CHECK_POSITION              1105
@@ -147,6 +151,7 @@
 #define IDC_SPIN_Y2                     1116
 #define IDC_SPIN_TRIM_TAB_TITLES        1116
 #define IDC_TAB_TITLE                   1117
+#define IDC_SPIN_TRIM_TAB_TITLES_RIGHT  1117
 #define IDC_TAB_ICON                    1118
 #define IDC_RADIO_Z_DESKTOP             1118
 #define IDC_TAB_SHELL                   1119
@@ -211,6 +216,15 @@
 #define IDC_COMBO_SMOOTHING             1169
 #define IDC_CHECK_LEAVE_HIGHLIGHTED     1170
 #define IDC_CHECK_START_HIDDEN          1171
+#define IDC_CHECK_DEFAULT_ICON          1172
+#define IDC_CHECK_TABS_ON_BOTTOM        1173
+#define IDC_TAB_USER                    1174
+#define IDC_USER                        1175
+#define IDC_PASSWORD                    1176
+#define IDC_STATIC_TRIM_CHARS_RIGHT     1176
+#define IDC_CHECK_RUN_AS_USER           1177
+#define IDC_CHECK_TABS_ON_BOTTOM        1173
+#define IDC_TAB_USER                    1174
 #define IDC_INTEGRATE_WITH_EXPLORER     1172
 #define IDC_ALLOW_MULTIPLE_INSTANCES    1173
 #define IDC_REUSE_TAB                   1174
@@ -224,6 +238,9 @@
 #define ID_NEXT_TAB                     2200
 #define ID_PREV_TAB                     2201
 #define IDC_DUMP_BUFFER                 3000
+#define IDS_ERR_CANT_START_SHELL        5000
+#define IDS_ERR_CANT_START_AS_USER      5001
+#define IDS_ERR_CANT_START_SHELL_AS_USER 5001
 #define ID_FILE_NEW_TAB                 32775
 #define ID_VIEW_CONSOLE                 32777
 #define ID_FILE_CLOSE_TAB               32779
@@ -242,7 +259,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        215
+#define _APS_NEXT_RESOURCE_VALUE        217
 #define _APS_NEXT_COMMAND_VALUE         32794
 #define _APS_NEXT_CONTROL_VALUE         1178
 #define _APS_NEXT_SYMED_VALUE           101

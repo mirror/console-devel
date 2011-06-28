@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1250"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="Console"
 	ProjectGUID="{6EA5C354-A242-49F3-88D1-559EACA7FB8A}"
 	RootNamespace="Console"
@@ -11,17 +11,19 @@
 		<Platform
 			Name="Win32"
 		/>
+		<Platform
+			Name="x64"
+		/>
 	</Platforms>
 	<ToolFiles>
 	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\bin\Debug"
-			IntermediateDirectory="..\obj\Console\Debug"
+			OutputDirectory="..\bin\$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="..\obj\$(PlatformName)\$(ProjectName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			UseOfATL="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="1"
 			>
@@ -53,7 +55,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Zm200"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\contrib\wtl\include;..\contrib;..\contrib\boost\"
+				AdditionalIncludeDirectories="..\contrib;..\wtl\wtl\include;..\TabbingFramework"
 				PreprocessorDefinitions="WIN32;_WINDOWS;STRICT;_DEBUG"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
@@ -70,7 +72,7 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG"
 				Culture="1033"
-				AdditionalIncludeDirectories="$(IntDir);..\contrib\wtl\include\"
+				AdditionalIncludeDirectories="$(IntDir);..\wtl\wtl\include"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -109,12 +111,103 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="..\bin\Release"
-			IntermediateDirectory="..\obj\Console\Release"
+			Name="Debug|x64"
+			OutputDirectory="..\bin\$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="..\obj\$(PlatformName)\$(ProjectName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
-			UseOfATL="0"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="_DEBUG"
+				MkTypLibCompatible="false"
+				TargetEnvironment="3"
+				GenerateStublessProxies="true"
+				TypeLibraryName="$(IntDir)/Console.tlb"
+				HeaderFileName="Console.h"
+				DLLDataFileName=""
+				InterfaceIdentifierFileName="Console_i.c"
+				ProxyFileName="Console_p.c"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				AdditionalOptions="/Zm200"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\contrib;..\wtl\wtl\include;..\TabbingFramework"
+				PreprocessorDefinitions="WIN32;_WINDOWS;STRICT;_DEBUG"
+				MinimalRebuild="false"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
+				UsePrecompiledHeader="2"
+				WarningLevel="4"
+				Detect64BitPortabilityProblems="false"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="1033"
+				AdditionalIncludeDirectories="$(IntDir);..\wtl\wtl\include"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="..\FreeImage\x64\FreeImagePlus.lib delayimp.lib htmlhelp.lib userenv.lib"
+				LinkIncremental="2"
+				DelayLoadDLLs="uxtheme.dll"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="..\bin\$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="..\obj\$(PlatformName)\$(ProjectName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="1"
 			>
@@ -145,7 +238,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Zm200"
-				AdditionalIncludeDirectories="..\contrib\wtl\include;..\contrib\;..\contrib\boost\"
+				AdditionalIncludeDirectories="..\contrib;..\wtl\wtl\include;..\TabbingFramework"
 				PreprocessorDefinitions="WIN32;_WINDOWS;STRICT;NDEBUG"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
@@ -161,7 +254,7 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG"
 				Culture="1033"
-				AdditionalIncludeDirectories="$(IntDir);..\contrib\wtl\include\"
+				AdditionalIncludeDirectories="$(IntDir);..\wtl\wtl\include"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -175,6 +268,95 @@
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory="..\bin\$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="..\obj\$(PlatformName)\$(ProjectName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="false"
+				TargetEnvironment="3"
+				GenerateStublessProxies="true"
+				TypeLibraryName="$(IntDir)/Console.tlb"
+				HeaderFileName="Console.h"
+				DLLDataFileName=""
+				InterfaceIdentifierFileName="Console_i.c"
+				ProxyFileName="Console_p.c"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				AdditionalOptions="/Zm200"
+				AdditionalIncludeDirectories="..\contrib;..\wtl\wtl\include;..\TabbingFramework"
+				PreprocessorDefinitions="WIN32;_WINDOWS;STRICT;NDEBUG"
+				ExceptionHandling="1"
+				RuntimeLibrary="2"
+				UsePrecompiledHeader="2"
+				WarningLevel="4"
+				Detect64BitPortabilityProblems="false"
+				DebugInformationFormat="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+				AdditionalIncludeDirectories="$(IntDir);..\wtl\wtl\include"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="..\FreeImage\x64\FreeImagePlus.lib delayimp.lib htmlhelp.lib userenv.lib"
+				LinkIncremental="1"
+				DelayLoadDLLs="uxtheme.dll"
+				SubSystem="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -228,6 +410,10 @@
 			</File>
 			<File
 				RelativePath=".\Cursors.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgCredentials.cpp"
 				>
 			</File>
 			<File
@@ -310,7 +496,23 @@
 					/>
 				</FileConfiguration>
 				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
@@ -340,6 +542,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ConsoleException.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ConsoleHandler.h"
 				>
 			</File>
@@ -348,7 +554,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\shared\Constants.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Cursors.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DlgCredentials.h"
 				>
 			</File>
 			<File
@@ -412,6 +626,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\shared\Messages.h"
+				>
+			</File>
+			<File
 				RelativePath=".\NTProcessInfo.h"
 				>
 			</File>
@@ -461,10 +679,6 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;jpg;jpeg;jpe;manifest"
 			>
 			<File
-				RelativePath=".\res\Console.exe.manifest"
-				>
-			</File>
-			<File
 				RelativePath=".\res\Console.ico"
 				>
 			</File>
@@ -491,6 +705,43 @@
 			<File
 				RelativePath="..\help\console.hhp"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(InputDir)hhc.bat&quot; &quot;$(InputPath)&quot; &amp;&amp; copy &quot;$(InputDir)console.chm&quot; &quot;..\bin\$(PlatformName)\$(ConfigurationName)\Console.chm&quot;&#x0D;&#x0A;"
+						Outputs="&quot;..\bin\$(PlatformName)\$(ConfigurationName)\Console.chm&quot;"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(InputDir)hhc.bat&quot; &quot;$(InputPath)&quot; &amp;&amp; copy &quot;$(InputDir)console.chm&quot; &quot;..\bin\$(PlatformName)\$(ConfigurationName)\Console.chm&quot;"
+						Outputs="&quot;..\bin\$(PlatformName)\$(ConfigurationName)\Console.chm&quot;"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(InputDir)hhc.bat&quot; &quot;$(InputPath)&quot; &amp;&amp; copy &quot;$(InputDir)console.chm&quot; &quot;..\bin\$(PlatformName)\$(ConfigurationName)\Console.chm&quot;&#x0D;&#x0A;"
+						AdditionalDependencies=""
+						Outputs="&quot;..\bin\$(PlatformName)\$(ConfigurationName)\Console.chm&quot;"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(InputDir)hhc.bat&quot; &quot;$(InputPath)&quot; &amp;&amp; copy &quot;$(InputDir)console.chm&quot; &quot;..\bin\$(PlatformName)\$(ConfigurationName)\Console.chm&quot;"
+						Outputs="&quot;..\bin\$(PlatformName)\$(ConfigurationName)\Console.chm&quot;"
+					/>
+				</FileConfiguration>
 			</File>
 			<Filter
 				Name="html"

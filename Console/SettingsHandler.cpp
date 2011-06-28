@@ -282,6 +282,7 @@ WindowSettings::WindowSettings()
 , bShowCommandInTabs(true)
 , bUseTabTitles(false)
 , dwTrimTabTitles(0)
+, dwTrimTabTitlesRight(0)
 {
 }
 
@@ -304,6 +305,7 @@ bool WindowSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 	XmlHelper::GetAttribute(pWindowElement, CComBSTR(L"show_cmd_tabs"), bShowCommandInTabs, true);
 	XmlHelper::GetAttribute(pWindowElement, CComBSTR(L"use_tab_title"), bUseTabTitles, false);
 	XmlHelper::GetAttribute(pWindowElement, CComBSTR(L"trim_tab_titles"), dwTrimTabTitles, 0);
+	XmlHelper::GetAttribute(pWindowElement, CComBSTR(L"trim_tab_titles_right"), dwTrimTabTitlesRight, 0);
 
 	return true;
 }
@@ -327,6 +329,7 @@ bool WindowSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 	XmlHelper::SetAttribute(pWindowElement, CComBSTR(L"show_cmd_tabs"), bShowCommandInTabs);
 	XmlHelper::SetAttribute(pWindowElement, CComBSTR(L"use_tab_title"), bUseTabTitles);
 	XmlHelper::SetAttribute(pWindowElement, CComBSTR(L"trim_tab_titles"), dwTrimTabTitles);
+	XmlHelper::SetAttribute(pWindowElement, CComBSTR(L"trim_tab_titles_right"), dwTrimTabTitlesRight);
 
 	return true;
 }
@@ -346,6 +349,7 @@ WindowSettings& WindowSettings::operator=(const WindowSettings& other)
 	bShowCommandInTabs	= other.bShowCommandInTabs;
 	bUseTabTitles		= other.bUseTabTitles;
 	dwTrimTabTitles		= other.dwTrimTabTitles;
+	dwTrimTabTitlesRight= other.dwTrimTabTitlesRight;
 
 	return *this;
 }
@@ -366,7 +370,9 @@ ControlsSettings::ControlsSettings()
 , bShowStatusbar(true)
 , bShowTabs(true)
 , bHideSingleTab(false)
+, bTabsOnBottom(false)
 , bShowScrollbars(true)
+, bFlatScrollbars(false)
 {
 }
 
@@ -386,7 +392,9 @@ bool ControlsSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 	XmlHelper::GetAttribute(pCtrlsElement, CComBSTR(L"show_statusbar"), bShowStatusbar, true);
 	XmlHelper::GetAttribute(pCtrlsElement, CComBSTR(L"show_tabs"), bShowTabs, true);
 	XmlHelper::GetAttribute(pCtrlsElement, CComBSTR(L"hide_single_tab"), bHideSingleTab, false);
+	XmlHelper::GetAttribute(pCtrlsElement, CComBSTR(L"tabs_on_bottom"), bTabsOnBottom, false);
 	XmlHelper::GetAttribute(pCtrlsElement, CComBSTR(L"show_scrollbars"), bShowScrollbars, true);
+	XmlHelper::GetAttribute(pCtrlsElement, CComBSTR(L"flat_scrollbars"), bFlatScrollbars, false);
 
 	return true;
 }
@@ -407,7 +415,9 @@ bool ControlsSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 	XmlHelper::SetAttribute(pCtrlsElement, CComBSTR(L"show_statusbar"), bShowStatusbar);
 	XmlHelper::SetAttribute(pCtrlsElement, CComBSTR(L"show_tabs"), bShowTabs);
 	XmlHelper::SetAttribute(pCtrlsElement, CComBSTR(L"hide_single_tab"), bHideSingleTab);
+	XmlHelper::SetAttribute(pCtrlsElement, CComBSTR(L"tabs_on_bottom"), bTabsOnBottom);
 	XmlHelper::SetAttribute(pCtrlsElement, CComBSTR(L"show_scrollbars"), bShowScrollbars);
+	XmlHelper::SetAttribute(pCtrlsElement, CComBSTR(L"flat_scrollbars"), bFlatScrollbars);
 
 	return true;
 }
@@ -424,7 +434,9 @@ ControlsSettings& ControlsSettings::operator=(const ControlsSettings& other)
 	bShowStatusbar	= other.bShowStatusbar;
 	bShowTabs		= other.bShowTabs;
 	bHideSingleTab	= other.bHideSingleTab;
+	bTabsOnBottom	= other.bTabsOnBottom;
 	bShowScrollbars	= other.bShowScrollbars;
+	bFlatScrollbars	= other.bFlatScrollbars;
 
 	return *this;
 }
@@ -1009,16 +1021,19 @@ AnimateSettings& AnimateSettings::operator=(const AnimateSettings& other)
 
 //////////////////////////////////////////////////////////////////////////////
 
+// vds: >>
 OneInstanceSettings::OneInstanceSettings()
 : bAllowMultipleInstances(true)
 , bReuseTab(false)
 , bReuseBusyTab(false)
 {
 }
+// vds: <<
 
 //////////////////////////////////////////////////////////////////////////////
 
 
+// vds: >>
 //////////////////////////////////////////////////////////////////////////////
 
 bool OneInstanceSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
@@ -1222,6 +1237,19 @@ void SetKeyValue(TCHAR *path, TCHAR *value)
 	RegSetValue(HKEY_CLASSES_ROOT, path, REG_SZ, value, _tcslen(value) * sizeof(TCHAR));
 }
 
+bool ShellSettings::CouldIntegrateConsoleWithExplorer()
+{
+	HKEY key;
+	LSTATUS status = RegOpenKeyEx(HKEY_CLASSES_ROOT, _T("*\\shellex\\ContextMenuHandlers\\Console"), 0, KEY_SET_VALUE, &key);
+	if (status == ERROR_SUCCESS) {
+		RegCloseKey(key);
+		return True;
+	}
+	else {
+		return False;
+	}
+}
+
 void ShellSettings::IntegrateConsoleWithExplorer(bool integrate)
 {
 #if 1
@@ -1309,6 +1337,7 @@ ShellSettings& ShellSettings::operator=(const ShellSettings& other)
 }
 
 //////////////////////////////////////////////////////////////////////////////
+// vds: <<
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -1364,7 +1393,7 @@ BehaviorSettings& BehaviorSettings::operator=(const BehaviorSettings& other)
 	tabHighlightSettings= other.tabHighlightSettings;
 //	animateSettings		= other.animateSettings;
 	oneInstanceSettings	= other.oneInstanceSettings; // vds:
-	shellSettings		= other.shellSettings;
+	shellSettings		= other.shellSettings; // vds:
 
 	return *this;
 }
@@ -1793,6 +1822,7 @@ bool TabSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 		XmlHelper::GetAttribute(pTabElement, CComBSTR(L"title"), tabData->strTitle, L"Console");
 		XmlHelper::GetAttribute(pTabElement, CComBSTR(L"icon"), tabData->strIcon, L"");
+		XmlHelper::GetAttribute(pTabElement, CComBSTR(L"use_default_icon"), tabData->bUseDefaultIcon, false);
 
 		tabDataVector.push_back(tabData);
 
@@ -1800,6 +1830,8 @@ bool TabSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 		{
 			XmlHelper::GetAttribute(pConsoleElement, CComBSTR(L"shell"), tabData->strShell, strDefaultShell);
 			XmlHelper::GetAttribute(pConsoleElement, CComBSTR(L"init_dir"), tabData->strInitialDir, strDefaultInitialDir);
+			XmlHelper::GetAttribute(pConsoleElement, CComBSTR(L"run_as_user"), tabData->bRunAsUser, false);
+			XmlHelper::GetAttribute(pConsoleElement, CComBSTR(L"user"), tabData->strUser, L"");
 		}
 
 		if (SUCCEEDED(XmlHelper::GetDomElement(pTabElement, CComBSTR(L"cursor"), pCursorElement)))
@@ -1904,6 +1936,8 @@ bool TabSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 			XmlHelper::SetAttribute(pNewTabElement, CComBSTR(L"icon"), (*itTab)->strIcon);
 		}
 
+		XmlHelper::SetAttribute(pNewTabElement, CComBSTR(L"use_default_icon"), (*itTab)->bUseDefaultIcon);
+
 		// add <console> tag
 		CComPtr<IXMLDOMElement>	pNewConsoleElement;
 		CComPtr<IXMLDOMNode>	pNewConsoleOut;
@@ -1912,6 +1946,8 @@ bool TabSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 		XmlHelper::SetAttribute(pNewConsoleElement, CComBSTR(L"shell"), (*itTab)->strShell);
 		XmlHelper::SetAttribute(pNewConsoleElement, CComBSTR(L"init_dir"), (*itTab)->strInitialDir);
+		XmlHelper::SetAttribute(pNewConsoleElement, CComBSTR(L"run_as_user"), (*itTab)->bRunAsUser);
+		XmlHelper::SetAttribute(pNewConsoleElement, CComBSTR(L"user"), (*itTab)->strUser);
 
 		SettingsBase::AddTextNode(pSettingsDoc, pNewTabElement, CComBSTR(L"\n\t\t\t"));
 		pNewTabElement->appendChild(pNewConsoleElement, &pNewConsoleOut);
@@ -2018,6 +2054,7 @@ void TabSettings::SetDefaults(const wstring& defaultShell, const wstring& defaul
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
+// graym: >>
 //////////////////////////////////////////////////////////////////////////////
 
 InternationalizationSettings::InternationalizationSettings():
@@ -2091,7 +2128,7 @@ InternationalizationSettings& InternationalizationSettings::operator=(const Inte
 }
 
 //////////////////////////////////////////////////////////////////////////////
-
+// graym: <<
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -2111,7 +2148,7 @@ SettingsHandler::SettingsHandler()
 , m_hotKeys()
 , m_mouseSettings()
 , m_tabSettings()
-, m_internationalizationSettings()
+, m_internationalizationSettings() // graym:
 {
 }
 
@@ -2155,18 +2192,19 @@ bool SettingsHandler::LoadSettings(const wstring& strSettingsFileName)
 			m_settingsDirType	= dirTypeUser;
 
 			hr = XmlHelper::OpenXmlDocument(
-								m_strSettingsPath + m_strSettingsFileName, 
+								GetSettingsFileName(), 
 								m_pSettingsDocument, 
 								m_pSettingsRoot);
 		}
 
 		if (FAILED(hr))
 		{
+			// vds: If user folder open in module folder.
 			m_strSettingsPath	= Helpers::GetModulePath(NULL);
 			m_settingsDirType	= dirTypeExe;
 
 			hr = XmlHelper::OpenXmlDocument(
-								m_strSettingsPath + m_strSettingsFileName, 
+								GetSettingsFileName(), 
 								m_pSettingsDocument, 
 								m_pSettingsRoot);
 
@@ -2201,7 +2239,9 @@ bool SettingsHandler::LoadSettings(const wstring& strSettingsFileName)
 							m_pSettingsDocument, 
 							m_pSettingsRoot);
 
-		if (FAILED(hr)) return false;
+		if (FAILED(hr)) {
+			return false;
+		}
 	}
 
 	// load settings' sections
@@ -2214,7 +2254,7 @@ bool SettingsHandler::LoadSettings(const wstring& strSettingsFileName)
 	m_tabSettings.SetDefaults(m_consoleSettings.strShell, m_consoleSettings.strInitialDir);
 	m_tabSettings.Load(m_pSettingsRoot);
 
-	m_internationalizationSettings.Load(m_pSettingsRoot);
+	m_internationalizationSettings.Load(m_pSettingsRoot); // graym:
 
 	return true;
 }
@@ -2233,9 +2273,9 @@ bool SettingsHandler::SaveSettings()
 	m_mouseSettings.Save(m_pSettingsRoot);
 	m_tabSettings.Save(m_pSettingsRoot);
 
-	m_internationalizationSettings.Save(m_pSettingsRoot);
+	m_internationalizationSettings.Save(m_pSettingsRoot); // graym:
 
-	HRESULT hr = m_pSettingsDocument->save(CComVariant(m_strSettingsFileName.c_str()));
+	HRESULT hr = m_pSettingsDocument->save(CComVariant(GetSettingsFileName().c_str()));
 
 	return SUCCEEDED(hr) ? true : false;
 }
@@ -2247,21 +2287,36 @@ bool SettingsHandler::SaveSettings()
 
 void SettingsHandler::SetUserDataDir(SettingsDirType settingsDirType)
 {
+	m_settingsDirType = settingsDirType; // vds:
+
 	if (settingsDirType == dirTypeExe)
 	{
 		m_strSettingsPath = Helpers::GetModulePath(NULL);
+		return; // vds:
 	}
-	else if (settingsDirType == dirTypeUser)
+
+	if (settingsDirType == dirTypeUser) // vds:
 	{
 		wchar_t wszAppData[32767];
 		::ZeroMemory(wszAppData, sizeof(wszAppData));
 		::GetEnvironmentVariable(L"APPDATA", wszAppData, _countof(wszAppData));
 
-		m_strSettingsPath = wstring(wszAppData) + wstring(L"\\Console\\");
-		::CreateDirectory(m_strSettingsPath.c_str(), NULL);
-	}
+		// vds: >>
+		if (wszAppData == NULL) {
+			m_strSettingsPath = Helpers::GetModulePath(NULL);
+		}
+		// vds: <<
 
-	m_settingsDirType = settingsDirType;
+		m_strSettingsPath = wstring(wszAppData) + wstring(L"\\Console\\");
+
+		// vds: >>
+		BOOL ret = ::CreateDirectory(m_strSettingsPath.c_str(), NULL);
+		if (!ret && GetLastError() == ERROR_PATH_NOT_FOUND) {
+			m_strSettingsPath = Helpers::GetModulePath(NULL);
+		}
+		return;
+		// vds: <<
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////////

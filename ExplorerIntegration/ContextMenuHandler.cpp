@@ -252,13 +252,14 @@ STDMETHODIMP CContextMenuHandler::QueryContextMenu(HMENU hmenu,UINT indexMenu,UI
 		// Fill main menu item info
 		memset(&ii,0,sizeof(MENUITEMINFO));
 		ii.cbSize = sizeof(MENUITEMINFO);
-		ii.fMask = MIIM_CHECKMARKS|MIIM_STRING|MIIM_SUBMENU;
+		ii.fMask = MIIM_CHECKMARKS|MIIM_STRING|MIIM_ID|MIIM_SUBMENU;
+		ii.wID = idCmdFirst + eMC_RunConsoleWithTabFake;
 		ii.dwTypeData = const_cast<LPTSTR>(sItemName.c_str());
 		ii.cch = sItemName.size();
 		ii.hSubMenu = hSubMenu;
 		ii.hbmpChecked = (HBITMAP)LoadImage(_AtlBaseModule.GetResourceInstance(),MAKEINTRESOURCE(IDB_MENU_PICTURE),IMAGE_BITMAP,0,0,LR_LOADTRANSPARENT);
 		ii.hbmpUnchecked = (HBITMAP)LoadImage(_AtlBaseModule.GetResourceInstance(),MAKEINTRESOURCE(IDB_MENU_PICTURE),IMAGE_BITMAP,0,0,LR_LOADTRANSPARENT);
-		// insert menu item
+		// Insert menu item
 		InsertMenuItem(hmenu, indexMenu++, TRUE, &ii);
 
 		lastId = idCmdFirst + eMC_RunConsoleWithTab + g_vTabs.size();
