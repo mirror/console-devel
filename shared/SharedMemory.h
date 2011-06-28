@@ -1,5 +1,8 @@
 #pragma once
 
+#include <AccCtrl.h>
+#include <Aclapi.h>
+
 //////////////////////////////////////////////////////////////////////////////
 
 
@@ -26,7 +29,7 @@ class SharedMemory
 
 		~SharedMemory();
 
-		void Create(const wstring& strName, DWORD dwSize/* = 1*/, SyncObjectTypes syncObjects);
+		void Create(const wstring& strName, DWORD dwSize/* = 1*/, SyncObjectTypes syncObjects, const wstring& strUser);
 		void Open(const wstring& strName, SyncObjectTypes syncObjects/* = syncObjNone*/);
 
 		inline void Lock();
@@ -45,7 +48,7 @@ class SharedMemory
 
 	private:
 
-		void CreateSyncObjects(SyncObjectTypes syncObjects, const wstring& strName);
+		void CreateSyncObjects(const shared_ptr<SECURITY_ATTRIBUTES>& sa, SyncObjectTypes syncObjects, const wstring& strName);
 
 	private:
 
@@ -144,14 +147,103 @@ SharedMemory<T>::~SharedMemory()
 //////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-void SharedMemory<T>::Create(const wstring& strName, DWORD dwSize, SyncObjectTypes syncObjects)
+void SharedMemory<T>::Create(const wstring& strName, DWORD dwSize, SyncObjectTypes syncObjects, const wstring& strUser)
 {
 	m_strName	= strName;
 	m_dwSize	= dwSize;
 
+	shared_ptr<SECURITY_ATTRIBUTES>	sa;
+	EXPLICIT_ACCESS					ea[2];
+
+	SID_IDENTIFIER_AUTHORITY	SIDAuthCreator	= SECURITY_CREATOR_SID_AUTHORITY;
+
+	PSID						tmpSID = NULL;
+	shared_ptr<void>			creatorSID;		// PSID
+
+	PACL						tmpACL = NULL;
+	shared_ptr<ACL>				acl;
+
+	shared_ptr<void>			sd;				// PSECURITY_DESCRIPTOR
+
+	::ZeroMemory(&ea, 2*sizeof(EXPLICIT_ACCESS));
+
+	if (strUser.length() > 0)
+	{
+		// initialize an EXPLICIT_ACCESS structure for an ACE
+		// the ACE will allow Everyone full access
+		ea[0].grfAccessPermissions	= GENERIC_ALL;
+		ea[0].grfAccessMode			= SET_ACCESS;
+		ea[0].grfInheritance		= NO_INHERITANCE;
+		ea[0].Trustee.TrusteeForm	= TRUSTEE_IS_NAME;
+		ea[0].Trustee.TrusteeType	= TRUSTEE_IS_USER;
+		ea[0].Trustee.ptstrName		= (LPTSTR)strUser.c_str();
+
+		// create a SID for the BUILTIN\Administrators group
+		if (!::AllocateAndInitializeSid(
+					&SIDAuthCreator, 
+					1,
+					SECURITY_CREATOR_OWNER_RID,
+					0, 0, 0, 0, 0, 0, 0,
+					&tmpSID)) 
+		{
+			// TODO: error handling
+			return;
+		}
+
+		creatorSID.reset(tmpSID, ::FreeSid);
+
+		// initialize an EXPLICIT_ACCESS structure for an ACE
+		// the ACE will allow the Administrators group full access
+		ea[1].grfAccessPermissions	= GENERIC_ALL;
+		ea[1].grfAccessMode			= SET_ACCESS;
+		ea[1].grfInheritance		= NO_INHERITANCE;
+		ea[1].Trustee.TrusteeForm	= TRUSTEE_IS_SID;
+		ea[1].Trustee.TrusteeType	= TRUSTEE_IS_WELL_KNOWN_GROUP;
+		ea[1].Trustee.ptstrName		= (LPTSTR)creatorSID.get();
+
+		if (::SetEntriesInAcl(2, ea, NULL, &tmpACL) != ERROR_SUCCESS) 
+		{
+			// TODO: error handling
+			return;
+		}
+
+		acl.reset(tmpACL, ::LocalFree);
+
+		// initialize a security descriptor
+		sd.reset(::LocalAlloc(LPTR, SECURITY_DESCRIPTOR_MIN_LENGTH), ::LocalFree);
+		if (!sd) 
+		{ 
+			// TODO: error handling
+			return;
+		} 
+	 
+		if (!::InitializeSecurityDescriptor(sd.get(), SECURITY_DESCRIPTOR_REVISION)) 
+		{  
+			// TODO: error handling
+			return;
+		} 
+	 
+		// add the ACL to the security descriptor
+		if (!::SetSecurityDescriptorDacl(
+				sd.get(), 
+				TRUE,		// bDaclPresent flag   
+				acl.get(), 
+				FALSE))		// not a default DACL 
+		{  
+			// TODO: error handling
+			return;
+		} 
+
+		// initialize a security attributes structure
+		sa.reset(new SECURITY_ATTRIBUTES);
+		sa->nLength				= sizeof (SECURITY_ATTRIBUTES);
+		sa->lpSecurityDescriptor= sd.get();
+		sa->bInheritHandle		= FALSE;
+	}
+
 	m_hSharedMem = shared_ptr<void>(::CreateFileMapping(
 										INVALID_HANDLE_VALUE, 
-										NULL, 
+										sa.get(), 
 										PAGE_READWRITE, 
 										0, 
 										m_dwSize * sizeof(T), 
@@ -159,7 +251,7 @@ void SharedMemory<T>::Create(const wstring& strName, DWORD dwSize, SyncObjectTyp
 									::CloseHandle);
 
 	// TODO: error handling
-	//if (m_hSharedMem.get() == NULL) return false;
+	//if (!m_hSharedMem) return false;
 
 	m_pSharedMem = shared_ptr<T>(static_cast<T*>(::MapViewOfFile(
 													m_hSharedMem.get(), 
@@ -171,9 +263,7 @@ void SharedMemory<T>::Create(const wstring& strName, DWORD dwSize, SyncObjectTyp
 
 	::ZeroMemory(m_pSharedMem.get(), m_dwSize * sizeof(T));
 
-	if (syncObjects > syncObjNone) CreateSyncObjects(syncObjects, strName);
-
-	//if (m_pSharedMem.get() == NULL) return false;
+	if (syncObjects > syncObjNone) CreateSyncObjects(sa, syncObjects, strName);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -193,7 +283,8 @@ void SharedMemory<T>::Open(const wstring& strName, SyncObjectTypes syncObjects)
 									::CloseHandle);
 
 	// TODO: error handling
-	//if (m_hSharedMem.get() == NULL) return false;
+	//if (!m_hSharedMem) return false;
+	if (!m_hSharedMem || (m_hSharedMem.get() == INVALID_HANDLE_VALUE)) OutputDebugString(str(wformat(L"Error opening shared mem %1%, error: %2%\n") % m_strName % ::GetLastError()).c_str());
 
 	m_pSharedMem = shared_ptr<T>(static_cast<T*>(::MapViewOfFile(
 													m_hSharedMem.get(), 
@@ -203,9 +294,11 @@ void SharedMemory<T>::Open(const wstring& strName, SyncObjectTypes syncObjects)
 													0)),
 												::UnmapViewOfFile);
 
-	if (syncObjects > syncObjNone) CreateSyncObjects(syncObjects, strName);
+	if (!m_pSharedMem) OutputDebugString(str(wformat(L"Error mapping shared mem %1%, error: %2%\n") % m_strName % ::GetLastError()).c_str());
 
-	//if (m_pSharedMem.get() == NULL) return false;
+	if (syncObjects > syncObjNone) CreateSyncObjects(shared_ptr<SECURITY_ATTRIBUTES>(), syncObjects, strName);
+
+	//if (!m_pSharedMem) return false;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -216,7 +309,7 @@ void SharedMemory<T>::Open(const wstring& strName, SyncObjectTypes syncObjects)
 template<typename T>
 void SharedMemory<T>::Lock()
 {
-	if (m_hSharedMutex.get() == NULL) return;
+	if (!m_hSharedMutex) return;
 	::WaitForSingleObject(m_hSharedMutex.get(), INFINITE);
 }
 
@@ -228,7 +321,7 @@ void SharedMemory<T>::Lock()
 template<typename T>
 void SharedMemory<T>::Release()
 {
-	if (m_hSharedMutex.get() == NULL) return;
+	if (!m_hSharedMutex) return;
 	::ReleaseMutex(m_hSharedMutex.get());
 }
 
@@ -240,8 +333,16 @@ void SharedMemory<T>::Release()
 template<typename T>
 void SharedMemory<T>::SetReqEvent()
 {
-	if (m_hSharedReqEvent.get() == NULL) return;
-	::SetEvent(m_hSharedReqEvent.get());
+	if (!m_hSharedReqEvent) 
+	{
+		OutputDebugString(str(wformat(L"Req Event %1% is null!") % m_strName).c_str());
+		return;
+	}
+	
+	if (!::SetEvent(m_hSharedReqEvent.get()))
+	{
+		OutputDebugString(str(wformat(L"SetEvent %1% failed: %2%!\n") % m_strName % ::GetLastError()).c_str());
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -252,7 +353,11 @@ void SharedMemory<T>::SetReqEvent()
 template<typename T>
 void SharedMemory<T>::SetRespEvent()
 {
-	if (m_hSharedRespEvent.get() == NULL) return;
+	if (!m_hSharedRespEvent)
+	{
+		OutputDebugString(str(wformat(L"Resp Event %1% is null!") % m_strName).c_str());
+		return;
+	}
 	::SetEvent(m_hSharedRespEvent.get());
 }
 
@@ -345,24 +450,30 @@ SharedMemory<T>& SharedMemory<T>::operator=(const T& val)
 //////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-void SharedMemory<T>::CreateSyncObjects(SyncObjectTypes syncObjects, const wstring& strName)
+void SharedMemory<T>::CreateSyncObjects(const shared_ptr<SECURITY_ATTRIBUTES>& sa, SyncObjectTypes syncObjects, const wstring& strName)
 {
 	if (syncObjects >= syncObjRequest)
 	{
 		m_hSharedMutex = shared_ptr<void>(
-							::CreateMutex(NULL, FALSE, (strName + wstring(L"_mutex")).c_str()),
+							::CreateMutex(sa.get(), FALSE, (wstring(L"") + strName + wstring(L"_mutex")).c_str()),
 							::CloseHandle);
 
+		OutputDebugString(str(wformat(L"m_hSharedMutex %1%: %2%\n") % m_strName % (DWORD)(m_hSharedMutex.get())).c_str());
+
 		m_hSharedReqEvent = shared_ptr<void>(
-							::CreateEvent(NULL, FALSE, FALSE, (strName + wstring(L"_req_event")).c_str()),
+							::CreateEvent(sa.get(), FALSE, FALSE, (wstring(L"") + strName + wstring(L"_req_event")).c_str()),
 							::CloseHandle);
+
+		OutputDebugString(str(wformat(L"m_hSharedReqEvent %1%: %2%\n") % m_strName % (DWORD)(m_hSharedReqEvent.get())).c_str());
 	}
 
 	if (syncObjects >= syncObjBoth)
 	{
 		m_hSharedRespEvent = shared_ptr<void>(
-							::CreateEvent(NULL, FALSE, FALSE, (strName + wstring(L"_resp_event")).c_str()),
+							::CreateEvent(sa.get(), FALSE, FALSE, (wstring(L"") + strName + wstring(L"_resp_event")).c_str()),
 							::CloseHandle);
+
+		OutputDebugString(str(wformat(L"m_hSharedRespEvent %1%: %2%\n") % m_strName % (DWORD)(m_hSharedRespEvent.get())).c_str());
 	}
 }
 
