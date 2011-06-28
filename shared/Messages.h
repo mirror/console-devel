@@ -1,5 +1,13 @@
 #pragma once
 
+/// List of possible external commands:
+
+enum eExternalCommands {
+	eEC_Nothing = 0x1000,	///< dummy command, no params
+	eEC_NewTab,				///< create new tab, use \ref ECNewTabParams
+};
+
+#if 0
 #pragma pack(push)
 #pragma pack(1)
 #pragma warning(disable:4200)
@@ -7,14 +15,9 @@
 //////////////////////////////////////////////////////////////////////////
 // WM_COPYDATA message constants and structures
 //////////////////////////////////////////////////////////////////////////
+
 // Command is stored in COPYDATASTRUCT.dwData member.
 // COPYDATASTRUCT.lpData points to structure with command params.
-
-/// List of possible external commands
-enum eExternalCommands{
-	eEC_Nothing = 0x1000,	///< dummy command, no params
-	eEC_NewTab,				///< create new tab, use \ref ECNewTabParams
-};
 
 /// Parameters for \ref eEC_NewTab command
 typedef struct _ECNewTabParams
@@ -29,3 +32,5 @@ typedef struct _ECNewTabParams
 
 #pragma warning(default:4200)
 #pragma pack(pop)
+
+#endif

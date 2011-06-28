@@ -1,7 +1,7 @@
 [Setup]
 OutputDir=setup
 SourceDir=..\
-OutputBaseFilename=Console 2.00b147 win32
+OutputBaseFilename=Console 2.00b147 x64
 VersionInfoVersion=2.00
 MinVersion=0,5.0.2195sp3
 AppName=Console
@@ -17,14 +17,16 @@ Compression=lzma
 DefaultGroupName=Console
 SetupIconFile=Console\res\Console.ico
 UninstallDisplayIcon={app}\Console.exe
+ArchitecturesInstallIn64BitMode=x64
+ArchitecturesAllowed=x64
 [Files]
 ; Binary files
-Source: bin\Win32\Release\Console.exe; DestDir: {app}; Components: main
+Source: bin\x64\Release\Console.exe; DestDir: {app}; Components: main; Flags: 64bit
 Source: help\Console.chm; DestDir: {app}; Components: main
-Source: bin\Win32\Release\ConsoleHook.dll; DestDir: {app}; Components: main
-Source: bin\Win32\Release\ExplorerIntegration.dll; DestDir: {app}; Components: main; Flags: regserver uninsrestartdelete restartreplace
-Source: setup\dlls\FreeImage.dll; DestDir: {app}; Components: main
-Source: setup\dlls\FreeImagePlus.dll; DestDir: {app}; Components: main
+Source: bin\x64\Release\ConsoleHook.dll; DestDir: {app}; Components: main; Flags: 64bit
+Source: bin\x64\Release\ExplorerIntegration.dll; DestDir: {app}; Components: main; Flags: 64bit regserver uninsrestartdelete restartreplace
+Source: setup\dlls\x64\FreeImage.dll; DestDir: {app}; Components: main; Flags: 64bit
+Source: setup\dlls\x64\FreeImagePlus.dll; DestDir: {app}; Components: main; Flags: 64bit
 ; Config files
 Source: setup\config\console.xml; DestDir: {app}; Components: main
 Source: setup\config\console.xml; DestDir: {userappdata}\Console; Components: main
