@@ -20,6 +20,8 @@ Debug\*.*
 Release-x64\*.*
 Debug-x64\*.*
 
+setup\Console*.exe
+
 
 # ignore another source control files
 cvs
@@ -37,4 +39,3 @@ help\Console.chm
 # ignore boost
 contrib\boost\*\
 contrib\boost\*.*
-
