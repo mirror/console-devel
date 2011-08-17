@@ -534,6 +534,20 @@ bool ConsoleHandler::InjectHookDLL(PROCESS_INFORMATION& pi)
 
 	::ZeroMemory(&wow64Context, sizeof(WOW64_CONTEXT));
 	::IsWow64Process(pi.hProcess, &isWow64Process);
+
+	// vds: >>
+	//BOOL Wow64GetThreadContext(HANDLE hThread, PWOW64_CONTEXT);
+	typedef BOOL (*Wow64GetThreadContextT)(HANDLE hThread, PWOW64_CONTEXT);
+	Wow64GetThreadContextT fnWow64GetThreadContext = reinterpret_cast<Wow64GetThreadContextT>(::GetProcAddress(::GetModuleHandle(L"kernel32.dll"), "Wow64GetThreadContext"));
+
+	typedef BOOL (*Wow64SetThreadContextT)(HANDLE hThread, const WOW64_CONTEXT *lpContext);
+	Wow64SetThreadContextT fnWow64SetThreadContext = reinterpret_cast<Wow64SetThreadContextT>(::GetProcAddress(::GetModuleHandle(L"kernel32.dll"), "Wow64SetThreadContext"));
+
+	if (!fnWow64GetThreadContext || !fnWow64SetThreadContext) {
+		isWow64Process = FALSE;
+	}
+	// vds: <<
+
 	codeSize = isWow64Process ? 20 : 91;
 #else
 	codeSize = 20;
@@ -565,7 +579,10 @@ bool ConsoleHandler::InjectHookDLL(PROCESS_INFORMATION& pi)
 	if (isWow64Process)
 	{
 		wow64Context.ContextFlags = CONTEXT_FULL;
-		::Wow64GetThreadContext(pi.hThread, &wow64Context);
+		// vds: >>
+		//::Wow64GetThreadContext(pi.hThread, &wow64Context);
+		fnWow64GetThreadContext(pi.hThread, &wow64Context);
+		// vds: <<
 
 		mem = ::VirtualAllocEx(pi.hProcess, NULL, memLen, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 
@@ -652,7 +669,10 @@ bool ConsoleHandler::InjectHookDLL(PROCESS_INFORMATION& pi)
 		::WriteProcessMemory(pi.hProcess, mem, code.get(), memLen, NULL);
 		::FlushInstructionCache(pi.hProcess, mem, memLen);
 		wow64Context.Eip = (DWORD)mem;
-		::Wow64SetThreadContext(pi.hThread, &wow64Context);
+		// vds: >>
+		//::Wow64SetThreadContext(pi.hThread, &wow64Context);
+		fnWow64SetThreadContext(pi.hThread, &wow64Context);
+		// vds: <<
 	}
 	else
 	{
