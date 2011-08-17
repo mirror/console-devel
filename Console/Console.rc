@@ -735,7 +735,7 @@ BEGIN
             VALUE "Comments", "Tabbed cool console window (THIS IS NOT A SHELL :-)"
             VALUE "CompanyName", "Ingenuity Unlimited Ltd."
             VALUE "FileDescription", "Main Console module"
-            VALUE "FileVersion", "2.00, Build 147 2010.11.01"
+            VALUE "FileVersion", "2.00, Build 147a 2010.11.01"
             VALUE "InternalName", "Console"
             VALUE "LegalCopyright", "Copyright © 2001-2010 Marko Bozikovic"
             VALUE "LegalTrademarks", "Copyright © 2001-2010 Marko Bozikovic"
