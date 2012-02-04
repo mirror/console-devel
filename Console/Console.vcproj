@@ -148,7 +148,7 @@
 				AdditionalOptions="/Zm200"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\contrib;..\wtl\wtl\include;..\TabbingFramework"
-				PreprocessorDefinitions="WIN32;_WINDOWS;STRICT;_DEBUG"
+				PreprocessorDefinitions="_WIN64;_WINDOWS;STRICT;_DEBUG"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -328,7 +328,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Zm200"
 				AdditionalIncludeDirectories="..\contrib;..\wtl\wtl\include;..\TabbingFramework"
-				PreprocessorDefinitions="WIN32;_WINDOWS;STRICT;NDEBUG"
+				PreprocessorDefinitions="_WIN64;_WINDOWS;STRICT;NDEBUG"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="2"
@@ -719,7 +719,7 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(InputDir)hhc.bat&quot; &quot;$(InputPath)&quot; &amp;&amp; copy &quot;$(InputDir)console.chm&quot; &quot;..\bin\$(PlatformName)\$(ConfigurationName)\Console.chm&quot;"
+						CommandLine="&quot;$(InputDir)hhc.bat&quot; &quot;$(InputPath)&quot; &amp;&amp; copy &quot;$(InputDir)console.chm&quot; &quot;..\bin\$(PlatformName)\$(ConfigurationName)\Console.chm&quot;&#x0D;&#x0A;"
 						Outputs="&quot;..\bin\$(PlatformName)\$(ConfigurationName)\Console.chm&quot;"
 					/>
 				</FileConfiguration>
@@ -738,7 +738,7 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(InputDir)hhc.bat&quot; &quot;$(InputPath)&quot; &amp;&amp; copy &quot;$(InputDir)console.chm&quot; &quot;..\bin\$(PlatformName)\$(ConfigurationName)\Console.chm&quot;"
+						CommandLine="&quot;$(InputDir)hhc.bat&quot; &quot;$(InputPath)&quot; &amp;&amp; copy &quot;$(InputDir)console.chm&quot; &quot;..\bin\$(PlatformName)\$(ConfigurationName)\Console.chm&quot;&#x0D;&#x0A;"
 						Outputs="&quot;..\bin\$(PlatformName)\$(ConfigurationName)\Console.chm&quot;"
 					/>
 				</FileConfiguration>
@@ -784,6 +784,10 @@
 				</File>
 				<File
 					RelativePath="..\help\html\running.html"
+					>
+				</File>
+				<File
+					RelativePath="..\help\html\settings.html"
 					>
 				</File>
 				<File
