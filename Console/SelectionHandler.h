@@ -19,7 +19,8 @@ class SelectionHandler
 			selstateNoSelection		= 0x00,
 			selstateStartedSelecting= 0x01,
 			selstateSelecting		= 0x02,
-			selstateSelected		= 0x03
+			selstateSelected		= 0x03,
+			selstateSelectWord		= 0x04,
 		};
 
 	public:
@@ -39,6 +40,7 @@ class SelectionHandler
 	public:
 
 		void StartSelection(const COORD& coordInit, COLORREF crSelectionColor, shared_array<CharInfo> screenBuffer);
+		void SelectWord(const COORD& coordInit, COLORREF crSelectionColor, shared_array<CharInfo> screenBuffer);
 		void UpdateSelection(const COORD& coordCurrent, shared_array<CharInfo> screenBuffer);
 		void UpdateSelection();
 		bool CopySelection(const COORD& coordCurrent);

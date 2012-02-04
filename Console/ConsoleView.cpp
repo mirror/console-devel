@@ -488,12 +488,27 @@ LRESULT ConsoleView::OnMouseButton(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL
 				::SetCursor(::LoadCursor(NULL, IDC_IBEAM));
 
 				MutexLock bufferLock(m_bufferMutex);
+				m_selectionHandler->ClearSelection();
 				m_selectionHandler->StartSelection(GetConsoleCoord(point), m_appearanceSettings.stylesSettings.crSelectionColor, m_screenBuffer);
 
 				m_mouseCommand = MouseSettings::cmdSelect;
 				return 0;
 			}
-			
+
+			if (MouseSettings::clickDouble == mouseAction.clickType)
+			{
+				mouseAction.clickType = MouseSettings::clickSingle;
+				if ((*it)->action == mouseAction)
+				{
+					m_mouseCommand = MouseSettings::cmdSelect;
+
+					MutexLock bufferLock(m_bufferMutex);
+					m_selectionHandler->SelectWord(GetConsoleCoord(point), m_appearanceSettings.stylesSettings.crSelectionColor, m_screenBuffer);
+				}
+
+				mouseAction.clickType = MouseSettings::clickDouble;
+			}
+
 			// paste command
 			it = mouseSettings.commands.get<MouseSettings::commandID>().find(MouseSettings::cmdPaste);
 			if ((*it)->action == mouseAction)
@@ -543,7 +558,8 @@ LRESULT ConsoleView::OnMouseButton(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL
 						m_selectionHandler->EndSelection();
 						m_selectionHandler->ClearSelection();
 					}
-					else if (m_selectionHandler->GetState() == SelectionHandler::selstateSelecting)
+					else if (m_selectionHandler->GetState() == SelectionHandler::selstateSelecting ||
+						 m_selectionHandler->GetState() == SelectionHandler::selstateSelectWord)
 					{
 						m_selectionHandler->EndSelection();
 
@@ -1236,6 +1252,11 @@ void ConsoleView::Copy(const CPoint* pPoint /* = NULL */)
 
 	bool bCopied = false;
 
+	if (!g_settingsHandler->GetBehaviorSettings().copyPasteSettings.bSensitiveCopy)
+	{
+		pPoint = 0;
+	}
+
 	if (pPoint != NULL)
 	{
 		bCopied = m_selectionHandler->CopySelection(GetConsoleCoord(*pPoint));
@@ -1275,7 +1296,7 @@ void ConsoleView::ClearSelection()
 
 void ConsoleView::Paste()
 {
-	if (!::IsClipboardFormatAvailable(CF_UNICODETEXT)) return;
+	if (!CanPaste()) return;
 	::SendMessage(m_consoleHandler.GetConsoleParams()->hwndConsoleWindow, WM_SYSCOMMAND, SC_CONSOLE_PASTE, 0);
 }
 

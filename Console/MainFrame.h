@@ -260,7 +260,7 @@ class MainFrame
 		ConsoleView* LookupTab(shared_ptr<TabData> tabData, wstring startupDir); // vds: Reuse exising tab
 
 	private:
-		void CreateNewTab(wchar_t *lpstrCmdLine);
+		void CreateNewTab(wchar_t *lpstrCmdLine); // vds:
 
 		bool					m_bOnCreateDone;
 

@@ -18,8 +18,6 @@ DlgSettingsConsole::DlgSettingsConsole(CComPtr<IXMLDOMElement>& pOptionsRoot)
 : DlgSettingsBase(pOptionsRoot)
 , m_strShell(L"")
 , m_strInitialDir(L"")
-, m_nStartHidden(0)
-, m_nSaveSize(0)
 {
 	IDD = IDD_SETTINGS_CONSOLE;
 }
@@ -39,9 +37,6 @@ LRESULT DlgSettingsConsole::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARA
 	m_consoleSettings.Load(m_pOptionsRoot);
 	m_strShell		= m_consoleSettings.strShell.c_str();
 	m_strInitialDir	= m_consoleSettings.strInitialDir.c_str();
-
-	m_nStartHidden	= m_consoleSettings.bStartHidden ? 1 : 0;
-	m_nSaveSize		= m_consoleSettings.bSaveSize ? 1 : 0;
 
 	CUpDownCtrl	spin;
 	UDACCEL udAccel;
@@ -136,12 +131,10 @@ LRESULT DlgSettingsConsole::OnCloseCmd(WORD /*wNotifyCode*/, WORD wID, HWND /*hW
 {
 	if (wID == IDOK)
 	{
-		DoDataExchange(DDX_SAVE);
+		if (!DoDataExchange(DDX_SAVE)) return -1;
+
 		m_consoleSettings.strShell		= m_strShell;
 		m_consoleSettings.strInitialDir	= m_strInitialDir;
-
-		m_consoleSettings.bStartHidden	= (m_nStartHidden > 0);
-		m_consoleSettings.bSaveSize		= (m_nSaveSize > 0);
 
 		// set immediate settings
 		ConsoleSettings& consoleSettings = g_settingsHandler->GetConsoleSettings();
@@ -150,7 +143,6 @@ LRESULT DlgSettingsConsole::OnCloseCmd(WORD /*wNotifyCode*/, WORD wID, HWND /*hW
 		m_consoleSettings.Save(m_pOptionsRoot);
 	}
 
-	DestroyWindow();
 	return 0;
 }
 
@@ -230,3 +222,45 @@ LRESULT DlgSettingsConsole::OnClickedClrBtn(WORD /*wNotifyCode*/, WORD wID, HWND
 
 //////////////////////////////////////////////////////////////////////////////
 
+
+//////////////////////////////////////////////////////////////////////////////
+
+void DlgSettingsConsole::OnDataValidateError(UINT nCtrlID, BOOL bSave, _XData& data)
+{
+	CString message;
+
+	switch (nCtrlID)
+	{
+		case IDC_BUFFER_ROWS :
+		{
+			message.LoadString(MSG_SETTINGS_INVALID_BUFFER_ROWS);
+			break;
+		}
+
+		case IDC_BUFFER_COLUMNS :
+		{
+			message.LoadString(MSG_SETTINGS_INVALID_BUFFER_COLUMNS);
+			break;
+		}
+
+		case IDC_ROWS :
+		{
+			message.LoadString(MSG_SETTINGS_INVALID_ROWS);
+			break;
+		}
+
+		case IDC_COLUMNS :
+		{
+			message.LoadString(MSG_SETTINGS_INVALID_COLUMNS);
+			break;
+		}
+
+		default: break;
+	}
+
+	if (message.GetLength() > 0) ::MessageBox(this->GetParent(), message, L"Error", MB_OK|MB_ICONERROR);
+
+	DlgSettingsBase::OnDataValidateError(nCtrlID, bSave, data);
+}
+
+//////////////////////////////////////////////////////////////////////////////

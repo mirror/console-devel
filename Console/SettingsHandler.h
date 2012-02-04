@@ -244,6 +244,8 @@ struct TransparencySettings : public SettingsBase
 	BYTE				byActiveAlpha;
 	BYTE				byInactiveAlpha;
 	COLORREF			crColorKey;
+
+	static BYTE			minAlpha;
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -284,6 +286,7 @@ struct CopyPasteSettings : public SettingsBase
 
 	bool			bCopyOnSelect;
 	bool			bClearOnCopy;
+	bool			bSensitiveCopy;
 	bool			bNoWrap;
 	bool			bTrimSpaces;
 
@@ -735,7 +738,7 @@ class SettingsHandler
 		bool LoadSettings(const wstring& strSettingsFileName);
 		bool SaveSettings();
 
-		wstring	GetSettingsFileName() const { return m_strSettingsPath + m_strSettingsFileName; }
+		wstring	GetSettingsFileName() const { return m_strSettingsPath+m_strSettingsFileName; }
 
 		SettingsDirType GetSettingsDirType() const { return m_settingsDirType; }
 		void SetUserDataDir(SettingsDirType settingsDirType);

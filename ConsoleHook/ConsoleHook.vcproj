@@ -127,7 +127,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\contrib;..\wtl\wtl\include;..\TabbingFramework"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;CONSOLEHOOK_EXPORTS"
+				PreprocessorDefinitions="_WIN64;_DEBUG;_WINDOWS;_USRDLL;CONSOLEHOOK_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -285,7 +285,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="..\contrib;..\wtl\wtl\include;..\TabbingFramework"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;CONSOLEHOOK_EXPORTS"
+				PreprocessorDefinitions="_WIN64;NDEBUG;_WINDOWS;_USRDLL;CONSOLEHOOK_EXPORTS"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="2"
 				WarningLevel="4"
