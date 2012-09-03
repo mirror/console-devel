@@ -202,6 +202,23 @@ void ParseCommandLine
 //////////////////////////////////////////////////////////////////////////
 
 // vds: >>
+wstring EscapeCommand(wstring cmd) {
+	wstring ret;
+	size_t cursor = 0;
+	while (true) {
+		size_t pos = cmd.find_first_of(L"\"", cursor);
+		if (pos == wstring::npos) {
+			ret += cmd.substr(cursor);
+			break;
+		}
+		ret += cmd.substr(cursor, pos - cursor);
+		ret += wstring(L"\\\"");
+		cursor = pos + 1;
+	}
+
+	return ret;
+}
+
 wstring BuildCommandLine(
 	wstring strConfigFile, 
 	wstring strWindowTitle, 
@@ -248,7 +265,7 @@ wstring BuildCommandLine(
 
 		ret += _T(" -t \"") + tab + _T("\"");
 		ret += _T(" -d \"") + dir + _T("\"");
-		ret += _T(" -r \"") + cmd + _T("\"");
+		ret += _T(" -r \"") + EscapeCommand(cmd) + _T("\"");
 	}
 	for (unsigned int i = startupTabs.size(); i < startupDirs.size(); ++i) {
 		wstring dir = startupDirs[i];
@@ -258,7 +275,7 @@ wstring BuildCommandLine(
 	for (unsigned int i = startupTabs.size(); i < startupCmds.size(); ++i) {
 		wstring cmd = startupCmds[i];
 
-		ret += _T(" -r \"") + cmd + _T("\"");
+		ret += _T(" -r \"") + EscapeCommand(cmd) + _T("\"");
 	}
 
 	if (nMultiStartSleep != 0) {
