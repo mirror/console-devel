@@ -21,6 +21,8 @@ Release-x64\*.*
 Debug-x64\*.*
 
 setup\Console*.exe
+setup\Console*.zip
+setup\*.orig
 
 
 # ignore another source control files
@@ -39,3 +41,9 @@ help\Console.chm
 # ignore boost
 contrib\boost\*\
 contrib\boost\*.*
+contrib\trash\*\
+contrib\trash\*.*
+
+ConsoleWow\*.*
+
+SourceForge-Shell.*

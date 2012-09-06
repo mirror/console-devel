@@ -1,0 +1,6 @@
+Activate SSH by double clik on: SourceForge-Shell.ppk
+Pass Phrase: viviandesmedt
+
+hg pull
+
+hg push

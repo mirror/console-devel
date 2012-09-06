@@ -1,0 +1,111 @@
+-SourceForge-Shell.*
++.hgignore
+
+!exclude-recursively *.aps
+!exclude-recursively *.bak
+!exclude-recursively *.ncb
+!exclude-recursively *.old
+!exclude-recursively *.pyc
+!exclude-recursively *.pyo
+!exclude-recursively *.suo
+!exclude-recursively *.user
+!exclude-recursively *.zip
+!exclude-recursively CVS
+!exclude-recursively .#*
+!exclude-recursively .svn
+!exclude-recursively .git
+!exclude-recursively .hg
+#!exclude-recursively Debug*
+#!exclude-recursively Release*
+
+!exclude-recursively *.idb
+!exclude-recursively *.sbr
+!exclude-recursively *.obj
+!exclude-recursively *.exp
+!exclude-recursively *.lib
+!exclude-recursively *.map
+!exclude-recursively *.pdb
+!exclude-recursively *.ilk
+!exclude-recursively *.bsc
+!exclude-recursively *.res
+!exclude-recursively *.dep
+!exclude-recursively *.pch
+!exclude-recursively *.tlb
+!exclude-recursively BuildLog.htm
+!exclude-recursively *.class
+
+!exclude-recursively *.dll
+!exclude-recursively *.exe
+
+!include-recursively *.asm
+!include-recursively *.avi
+!include-recursively *.bat
+!include-recursively *.bmp
+!include-recursively *.c
+!include-recursively *.cmd
+!include-recursively *.cpp
+!include-recursively *.css
+!include-recursively *.cur
+!include-recursively *.cxx
+!include-recursively *.def
+!include-recursively *.dsp
+!include-recursively *.dsw
+!include-recursively *.g
+!include-recursively *.gif
+!include-recursively *.h
+!include-recursively *.hhc
+!include-recursively *.hhk
+!include-recursively *.hhp
+!include-recursively *.ipp
+!include-recursively *.hm
+!include-recursively *.hpp
+!include-recursively *.htm
+!include-recursively *.html
+!include-recursively *.hxx
+!include-recursively *.ico
+!include-recursively *.idl
+!include-recursively *.iss
+!include-recursively *.jpg
+!include-recursively *.js
+!include-recursively *.mak
+!include-recursively *.mk
+!include-recursively *.png
+!include-recursively *.py
+!include-recursively *.pl
+!include-recursively *.m4
+!include-recursively *.sh
+!include-recursively *.rc
+!include-recursively *.rc2
+!include-recursively *.rgs
+!include-recursively *.sln
+!include-recursively *.txt
+!include-recursively *.java
+!include-recursively *.vcproj
+!include-recursively *.xml
+!include-recursively *.manifest
+!include-recursively .archive
+!include-recursively .cvsignore
+!include-recursively .gitignore
+!include-recursively Doxyfile
+
+!rename-recursively *.bat *.tab
+!rename-recursively *.cmd *.dmc
+!rename-recursively *.exe *.xex
+!rename-recursively *.dll *.lld
+!rename-recursively *.lib *.bil
+!rename-recursively *.fon *.nof
+!rename-recursively *.vbs *.sbv
+
+-bin
++Console
++ConsoleHook
+-ConsoleWow
++contrib
++ExplorerIntegration
++FreeImage
++help
++obj
++setup
++shared
++TabbingFramework
++wtl
