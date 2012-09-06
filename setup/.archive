@@ -1,3 +1,5 @@
 +config
 +dlls
 +fonts
+-console-x64.iss.orig
+-console.iss.orig
