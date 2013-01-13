@@ -2075,7 +2075,7 @@ void TabSettings::SetDefaults(const wstring& defaultShell, const wstring& defaul
 //////////////////////////////////////////////////////////////////////////////
 
 InternationalizationSettings::InternationalizationSettings():
-strExplorerMenuRunItem(L"&Run Console"),
+strExplorerMenuRunItem(L"Co&nsole here"),
 strExplorerMenuRunWithItem(L"&Run Console Tab"),
 strExplorerMenuPostItem(L"&Post Console"),
 strExplorerMenuPostWithItem(L"&Post Console Tab")
