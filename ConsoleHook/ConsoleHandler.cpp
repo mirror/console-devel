@@ -245,6 +245,9 @@ void ConsoleHandler::ReadConsoleBuffer()
 
 		m_consoleBuffer.SetReqEvent();
 	}
+
+	// Current directory
+	GetCurrentDirectory(1024, m_consoleInfo->currentDirectory);
 }
 
 //////////////////////////////////////////////////////////////////////////////

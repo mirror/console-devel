@@ -224,9 +224,6 @@ LRESULT ConsoleView::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, B
 		return -1;
 	}
 
-	// set view title
-	SetTitle(m_strTitle);
-
 	m_bInitializing = false;
 
 	// set current language in the console window
@@ -1200,17 +1197,12 @@ void ConsoleView::SetActive(bool bActive)
 
 /////////////////////////////////////////////////////////////////////////////
 
-void ConsoleView::SetTitle(const CString& strTitle)
+CString ConsoleView::GetTitle()
 {
-	CString	title(strTitle);
-
-	if (m_strUser.GetLength() > 0)
-	{
-		title.Format(L"[%s] %s", m_strUser, strTitle);
-	}
-
-	m_strTitle = title;
-	SetWindowText(m_strTitle);
+	CWindow consoleWnd(m_consoleHandler.GetConsoleParams()->hwndConsoleWindow);
+	CString strConsoleTitle(L"");
+	consoleWnd.GetWindowText(strConsoleTitle);
+	return strConsoleTitle;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1227,23 +1219,10 @@ CString ConsoleView::GetConsoleCommand()
 
 	int nPos = strConsoleTitle.Find(L'-');
 
-	if (nPos == -1)
-	{
-		nPos = strConsoleTitle.Find(L"Console2 command window");
-
-		if (nPos == -1)
-		{
-			return CString(L" - ") + strConsoleTitle;
-		}
-		else
-		{
-			return CString();
-		}
-	}
+	if (nPos != -1)
+		return L": " + strConsoleTitle.Right(strConsoleTitle.GetLength() - nPos - 2);
 	else
-	{
-		return strConsoleTitle.Right(strConsoleTitle.GetLength() - nPos + 1);
-	}
+		return L"";
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1719,8 +1698,6 @@ void ConsoleView::UpdateTitle()
 		CString strConsoleTitle(L"");
 
 		consoleWnd.GetWindowText(strConsoleTitle);
-
-		SetTitle(strConsoleTitle);
 	}
 
 	m_mainFrame.PostMessage(
