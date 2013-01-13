@@ -227,6 +227,7 @@ class MainFrame
 
 		void AdjustWindowRect(CRect& rect);
 //		void AdjustAndResizeConsoleView(CRect& rectView);
+		void ToggleMenu();
 
 		bool SendDdeExecuteCommand(HWND hPrevConsole, LPTSTR lpstrCmdLine); // vds:
 

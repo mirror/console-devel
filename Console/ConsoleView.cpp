@@ -2191,6 +2191,11 @@ bool ConsoleView::TranslateKeyDown(UINT uMsg, WPARAM wParam, LPARAM /*lParam*/)
 		{
 			return true;
 		}
+		if (((::GetKeyState(VK_RMENU) & 0x80) == 0x80))
+		{
+			m_mainFrame.ToggleMenu();
+			return true;
+		}
 	}
 
 	return false;
