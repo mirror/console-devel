@@ -2,7 +2,6 @@
 #include "resource.h"
 
 #include "XmlHelper.h"
-#include "SettingsHandler.h"
 
 using namespace boost::algorithm;
 
@@ -43,6 +42,8 @@ ConsoleSettings::ConsoleSettings()
 , dwChangeRefreshInterval(10)
 , dwRows(25)
 , dwColumns(80)
+, dwHeight(200)
+, dwWidth(320)
 , dwBufferRows(200)
 , dwBufferColumns(80)
 , bStartHidden(false)
@@ -85,6 +86,8 @@ bool ConsoleSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 	XmlHelper::GetAttribute(pConsoleElement, CComBSTR(L"change_refresh"), dwChangeRefreshInterval, 10);
 	XmlHelper::GetAttribute(pConsoleElement, CComBSTR(L"rows"), dwRows, 25);
 	XmlHelper::GetAttribute(pConsoleElement, CComBSTR(L"columns"), dwColumns, 80);
+	XmlHelper::GetAttribute(pConsoleElement, CComBSTR(L"height"), dwHeight, 240);
+	XmlHelper::GetAttribute(pConsoleElement, CComBSTR(L"width"), dwWidth, 320);
 	XmlHelper::GetAttribute(pConsoleElement, CComBSTR(L"buffer_rows"), dwBufferRows, 0);
 	XmlHelper::GetAttribute(pConsoleElement, CComBSTR(L"buffer_columns"), dwBufferColumns, 0);
 	XmlHelper::GetAttribute(pConsoleElement, CComBSTR(L"start_hidden"), bStartHidden, false);
@@ -122,6 +125,8 @@ bool ConsoleSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 	XmlHelper::SetAttribute(pConsoleElement, CComBSTR(L"change_refresh"), dwChangeRefreshInterval);
 	XmlHelper::SetAttribute(pConsoleElement, CComBSTR(L"rows"), dwRows);
 	XmlHelper::SetAttribute(pConsoleElement, CComBSTR(L"columns"), dwColumns);
+	XmlHelper::SetAttribute(pConsoleElement, CComBSTR(L"height"), dwHeight);
+	XmlHelper::SetAttribute(pConsoleElement, CComBSTR(L"width"), dwWidth);
 	XmlHelper::SetAttribute(pConsoleElement, CComBSTR(L"buffer_rows"), dwBufferRows);
 	XmlHelper::SetAttribute(pConsoleElement, CComBSTR(L"buffer_columns"), dwBufferColumns);
 	XmlHelper::SetAttribute(pConsoleElement, CComBSTR(L"start_hidden"), bStartHidden);
@@ -154,6 +159,8 @@ ConsoleSettings& ConsoleSettings::operator=(const ConsoleSettings& other)
 	dwChangeRefreshInterval	= other.dwChangeRefreshInterval;
 	dwRows					= other.dwRows;
 	dwColumns				= other.dwColumns;
+	dwHeight				= other.dwHeight;
+	dwWidth					= other.dwWidth;
 	dwBufferRows			= other.dwBufferRows;
 	dwBufferColumns			= other.dwBufferColumns;
 	bStartHidden			= other.bStartHidden;

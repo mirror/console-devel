@@ -274,6 +274,10 @@ LRESULT MainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
 	CreateAcceleratorTable();
 	RegisterGlobalHotkeys();
 
+	SetWindowPos(0, 0, 0,
+		g_settingsHandler->GetConsoleSettings().dwWidth,
+		g_settingsHandler->GetConsoleSettings().dwHeight,
+		SWP_NOMOVE|SWP_NOZORDER|SWP_NOSENDCHANGING);
 	AdjustWindowSize(false);
 
 	CRect rectWindow;
@@ -340,6 +344,8 @@ LRESULT MainFrame::OnClose(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, 
 
 		positionSettings.nX	= rectWindow.left;
 		positionSettings.nY	= rectWindow.top;
+		consoleSettings.dwHeight = rectWindow.bottom-rectWindow.top;
+		consoleSettings.dwWidth = rectWindow.right-rectWindow.left;
 
 		bSaveSettings = true;
 	}
@@ -983,16 +989,8 @@ void MainFrame::CreateNewTab(wchar_t *lpstrCmdLine)
 			}
 		}
 		// Restore the application if it has been minimized:
-		WINDOWPLACEMENT placement;
-		memset(&placement, 0, sizeof(WINDOWPLACEMENT));
-		placement.length = sizeof(WINDOWPLACEMENT);
-
-		GetWindowPlacement(&placement);
-		placement.flags = WPF_ASYNCWINDOWPLACEMENT;
-		placement.showCmd = SW_RESTORE;
-		SetWindowPlacement(&placement);
-
-		SetFocus();
+		if (IsIconic()) ShowWindow(SW_RESTORE);
+		SetForegroundWindow(m_hWnd);
 	}
 }
 // vds: >>
@@ -2176,7 +2174,6 @@ void MainFrame::SetWindowStyles()
 	DWORD	dwStyle		= GetWindowLong(GWL_STYLE);
 	DWORD	dwExStyle	= GetWindowLong(GWL_EXSTYLE);
 
-	dwStyle &= ~WS_MAXIMIZEBOX;
 	if (!stylesSettings.bCaption)	dwStyle &= ~WS_CAPTION;
 	if (!stylesSettings.bResizable)	dwStyle &= ~WS_THICKFRAME;
 
@@ -2566,14 +2563,6 @@ void MainFrame::AdjustWindowSize(bool bResizeConsole, bool bMaxOrRestore /*= fal
 	AdjustWindowRect(clientRect);
 
 //	TRACE(L"AdjustWindowSize: %ix%i\n", clientRect.Width(), clientRect.Height());
-
-	SetWindowPos(
-		0, 
-		0, 
-		0, 
-		clientRect.Width(), 
-		clientRect.Height() + 4, 
-		SWP_NOMOVE|SWP_NOZORDER|SWP_NOSENDCHANGING);
 
 	// update window width and height
 	CRect rectWindow;
