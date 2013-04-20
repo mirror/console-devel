@@ -10,8 +10,11 @@
 // Command IDs
 enum eContextMenuCommands{
 	eMC_RunConsole = 0,			///< run console with first tab
-	eMC_RunConsoleWithTabFake,
+	eMC_PostConsole = 1,		///< post console with first tab
+	eMC_RunConsoleWithTabFake = 10,
 	eMC_RunConsoleWithTab,		///< run console with selected tab
+	eMC_PostConsoleWithTabFake = 60,
+	eMC_PostConsoleWithTab,		///< post console with selected tab
 };
 
 // Used registry structure
@@ -54,15 +57,17 @@ END_COM_MAP()
 	void FinalRelease();
 
 protected:
-	CString					sPath;			///> path to selected folder
-	CString					sExePath;		///> path to console executable
+	CString sPath;			///> path to selected folder
+	CString sExePath;		///> path to console executable
 //	std::vector<CString>	vTabs;			///> vector of known tabs (it is stored in registry because reparsing config on every object creation is a bad idea)
 #ifdef DEBUG_TO_LOG_FILES
-	HANDLE			m_log;
+	HANDLE m_log;
 #endif
 
+	UINT m_idCmdFirst;
+
 	int	LoadConfig();		///> load config from registry
-	int	RunConsole(LPCTSTR sQueriedPath,LPCTSTR sQueriedTab=NULL);		///> run console
+	int	RunConsole(LPCTSTR sQueriedPath, bool post = false, LPCTSTR sQueriedTab = NULL);		///> run console
 
 public:
 	STDMETHOD(Initialize)(PCIDLIST_ABSOLUTE pidlFolder,IDataObject *pdtobj,HKEY hkeyProgID);

@@ -78,8 +78,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,1
- PRODUCTVERSION 1,0,0,1
+ FILEVERSION 2,0,0,1
+ PRODUCTVERSION 2,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -94,14 +94,15 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "TODO: <Company name>"
-            VALUE "FileDescription", "TODO: <File description>"
-            VALUE "FileVersion", "1.0.0.1"
-            VALUE "LegalCopyright", "TODO: (c) <Company name>.  All rights reserved."
-            VALUE "InternalName", "ExplorerIntegration.dll"
+            VALUE "Comments", "Tabbed cool console window (THIS IS NOT A SHELL :-)"
+            VALUE "CompanyName", "Ingenuity Unlimited Ltd."
+            VALUE "FileDescription", "Explorer Integration Dll"
+            VALUE "FileVersion", "2.0.0.1"
+            VALUE "InternalName", "ExplorerIntegration"
+            VALUE "LegalCopyright", "Copyright © 2001-2011 Marko Bozikovic"
             VALUE "OriginalFilename", "ExplorerIntegration.dll"
-            VALUE "ProductName", "TODO: <Product name>"
-            VALUE "ProductVersion", "1.0.0.1"
+            VALUE "ProductName", "Console"
+            VALUE "ProductVersion", "2.0.0.1"
         END
     END
     BLOCK "VarFileInfo"

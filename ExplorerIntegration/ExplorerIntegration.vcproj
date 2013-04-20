@@ -81,7 +81,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				RegisterOutput="true"
+				RegisterOutput="false"
 				IgnoreImportLibrary="true"
 				LinkIncremental="2"
 				ModuleDefinitionFile=".\ExplorerIntegration.def"
@@ -259,8 +259,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				RegisterOutput="true"
-				IgnoreImportLibrary="true"
+				RegisterOutput="false"
+				IgnoreImportLibrary="false"
 				LinkIncremental="1"
 				ModuleDefinitionFile=".\ExplorerIntegration.def"
 				GenerateDebugInformation="true"

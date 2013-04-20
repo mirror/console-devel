@@ -26,6 +26,7 @@ MainFrame::MainFrame
 	const vector<wstring>& startupTabs, 
 	const vector<wstring>& startupDirs, 
 	const vector<wstring>& startupCmds, 
+	const vector<wstring>& postedCmds, 
 	int nMultiStartSleep, 
 	bool bOneInstance, // vds:
 	const wstring& strDbgCmdLine
@@ -34,6 +35,7 @@ MainFrame::MainFrame
 , m_startupTabs(startupTabs)
 , m_startupDirs(startupDirs)
 , m_startupCmds(startupCmds)
+, m_postedCmds(postedCmds)
 , m_nMultiStartSleep(nMultiStartSleep)
 , m_bOneInstance(bOneInstance) // vds:
 , m_strDbgCmdLine(strDbgCmdLine)
@@ -80,7 +82,7 @@ BOOL MainFrame::PreTranslateMessage(MSG* pMsg)
 {
 	if (!m_acceleratorTable.IsNull() && m_acceleratorTable.TranslateAccelerator(m_hWnd, pMsg)) return TRUE;
 
-	if(CTabbedFrameImpl<MainFrame>::PreTranslateMessage(pMsg)) return TRUE;
+	if (CTabbedFrameImpl<MainFrame>::PreTranslateMessage(pMsg)) return TRUE;
 
 	if (!m_activeView) return FALSE;
 
@@ -171,11 +173,13 @@ LRESULT MainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
 	{
 		wstring strStartupDir(L"");
 		wstring strStartupCmd(L"");
+		wstring strPostedCmd(L""); // vds: posted command
 
 		if (m_startupDirs.size() > 0) strStartupDir = m_startupDirs[0];
 		if (m_startupCmds.size() > 0) strStartupCmd = m_startupCmds[0];
+		if (m_postedCmds.size() > 0) strPostedCmd = m_postedCmds[0];
 
-		if (!CreateNewConsole(0, strStartupDir, strStartupCmd, m_strDbgCmdLine)) return -1;
+		if (!CreateNewConsole(0, strStartupDir, strStartupCmd, strPostedCmd, m_strDbgCmdLine)) return -1;
 	}
 	else
 	{
@@ -195,6 +199,7 @@ LRESULT MainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
 							static_cast<DWORD>(i), 
 							m_startupDirs[tabIndex],
 							m_startupCmds[tabIndex],
+							m_postedCmds[tabIndex],
 							(i == 0) ? m_strDbgCmdLine : wstring(L"")))
 					{
 						bAtLeastOneStarted = true;
@@ -499,13 +504,13 @@ LRESULT MainFrame::OnHotKey(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOO
 
 LRESULT MainFrame::OnSysKeydown(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
-/*
+#if 0
 	if ((wParam == VK_SPACE) && (lParam & (0x1 << 29)))
 	{
 		// send the SC_KEYMENU directly to the main frame, because DefWindowProc does not handle the message correctly
 		return SendMessage(WM_SYSCOMMAND, SC_KEYMENU, VK_SPACE);
 	}
-*/
+#endif
 
 	bHandled = FALSE;
 	return 0;
@@ -873,6 +878,7 @@ void MainFrame::CreateNewTab(wchar_t *lpstrCmdLine)
 	vector<wstring>	startupTabs;
 	vector<wstring>	startupDirs;
 	vector<wstring>	startupCmds;
+	vector<wstring>	postedCmds; // vds: posted commands
 	int				nMultiStartSleep = 0;
 	wstring			strDbgCmdLine(L"");
 	WORD			iFlags = 0;
@@ -884,13 +890,16 @@ void MainFrame::CreateNewTab(wchar_t *lpstrCmdLine)
 		startupTabs, 
 		startupDirs, 
 		startupCmds, 
+		postedCmds, 
 		nMultiStartSleep, 
 		strDbgCmdLine,
 		iFlags);
 
 	if ((g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bAllowMultipleInstances && !(iFlags & CLF_REUSE_PREV_INSTANCE)) || iFlags & CLF_FORCE_NEW_INSTANCE)
 	{
-		// If you allow multiple instance don't let explorer reuse an existing one.
+		// vds: If you allow multiple instance don't let explorer reuse an existing one.
+		
+		// vds: Create a new instance of Console:
 		TCHAR module[512];
 		GetModuleFileName(0, module, sizeof(module) / sizeof(TCHAR) - 1);
 
@@ -907,12 +916,17 @@ void MainFrame::CreateNewTab(wchar_t *lpstrCmdLine)
 		CreateProcess(NULL, command, NULL, NULL, FALSE, NULL, NULL, NULL, &StartupInfo, &ProcessInfo);
 	}
 	else
-	{
+	{	
+		// vds: Reuse the existing Console:
+
 		TabSettings &tabSettings = g_settingsHandler->GetTabSettings();
 		if (!startupTabs.size() && tabSettings.tabDataVector.size()) {
 			startupTabs.push_back(tabSettings.tabDataVector[0]->strTitle);
 		}
 
+		// find tab with corresponding name...
+
+		// vds: Loop on the types of console:
 		for (size_t j = 0; j < startupTabs.size(); ++j) {
 			wstring startupTab = startupTabs[j];
 
@@ -930,6 +944,10 @@ void MainFrame::CreateNewTab(wchar_t *lpstrCmdLine)
 				if (j < startupCmds.size())
 					startupCmd = startupCmds[j];
 
+				wstring postedCmd = _T("");
+				if (j < postedCmds.size())
+					postedCmd = postedCmds[j];
+
 				ConsoleView *existingTab = NULL;
 
 				bool bReuseTab = g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bReuseTab;
@@ -944,7 +962,10 @@ void MainFrame::CreateNewTab(wchar_t *lpstrCmdLine)
 					existingTab = LookupTab(tabData, startupDir);
 
 				if (existingTab) {
+					// vds: An existing suitable tab have been found:
 					DisplayTab(existingTab->m_hWnd, FALSE);
+					existingTab->SendTextToConsole(postedCmd.c_str()); // vds: post command
+					break;
 				}
 				else if (tabSettings.tabDataVector[i]->strTitle == startupTab) {
 					// Found it, create
@@ -952,6 +973,7 @@ void MainFrame::CreateNewTab(wchar_t *lpstrCmdLine)
 						static_cast<DWORD>(i), // Tab index
 						wstring(startupDir), // Startup Dir
 						wstring(startupCmd), // Startup Cmd
+						wstring(postedCmd), // Posted Cmd // vds: posted command
 						wstring(strDbgCmdLine))) // Dbg CmdLine
 					{
 						return;
@@ -1379,9 +1401,20 @@ LRESULT MainFrame::OnNextTab(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*
 {
 	int nCurSel = m_TabCtrl.GetCurSel();
 
-	if (++nCurSel >= m_TabCtrl.GetItemCount()) nCurSel = 0;
+#if 1
+	// vds: Tab switching management >>
+	bool updateTabHistory = m_updateTabHistory;
+	m_updateTabHistory = false;
+
+	nCurSel = getNextTabCursor(nCurSel);
 	m_TabCtrl.SetCurSel(nCurSel);
 
+	m_updateTabHistory = updateTabHistory;
+	// vds: Tab switching management <<
+#else
+	if (++nCurSel >= m_TabCtrl.GetItemCount()) nCurSel = 0;
+	m_TabCtrl.SetCurSel(nCurSel);
+#endif
 	return 0;
 }
 
@@ -1394,9 +1427,20 @@ LRESULT MainFrame::OnPrevTab(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*
 {
 	int nCurSel = m_TabCtrl.GetCurSel();
 
-	if (--nCurSel < 0) nCurSel = m_TabCtrl.GetItemCount() - 1;
+#if 1
+	// vds: Tab switching management >>
+	bool updateTabHistory = m_updateTabHistory;
+	m_updateTabHistory = false;
+
+	nCurSel = getPreviousTabCursor(nCurSel);
 	m_TabCtrl.SetCurSel(nCurSel);
 
+	m_updateTabHistory = updateTabHistory;
+	// vds: Tab switching management <<
+#else
+	if (--nCurSel < 0) nCurSel = m_TabCtrl.GetItemCount() - 1;
+	m_TabCtrl.SetCurSel(nCurSel);
+#endif
 	return 0;
 }
 
@@ -1670,6 +1714,57 @@ LRESULT MainFrame::OnDumpBuffer(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndC
 
 //////////////////////////////////////////////////////////////////////////////
 
+// vds: Interupt >>
+LRESULT MainFrame::OnInterrupt(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
+{
+	if (!m_activeView) return 0;
+
+#if 1
+	HWND hwnd = m_activeView->GetConsoleHandler().GetConsoleParams()->hwndConsoleWindow;
+
+	UINT scanCode;
+	LPARAM lParam;
+
+#if 0
+	scanCode = MapVirtualKey(VK_CONTROL, MAPVK_VK_TO_VSC);
+	lParam = (scanCode << 16) + 1;
+	::PostMessage(hwnd, WM_KEYDOWN, VK_CONTROL, lParam + 1 << 30);
+#endif
+
+	scanCode = MapVirtualKey('C', MAPVK_VK_TO_VSC);
+	lParam = (scanCode << 16) + 1;
+	//::PostMessage(hwnd, WM_KEYDOWN, 'C', lParam + 1 << 30);
+	::PostMessage(hwnd, WM_CHAR, 'C', lParam);
+
+#if 0
+	BYTE keyState[256] = {0};
+	// Get the current keyboard state...
+	GetKeyboardState(keyState);
+	BYTE alt = keyState[VK_MENU];
+	BYTE i = keyState['I'];
+
+	BYTE keyStateNew[256] = {0};
+	//memcpy(keyStateNew, keyState, 256);
+	memset(keyStateNew, 0, 256);
+	keyStateNew[VK_CONTROL] |= 0x80;
+	keyStateNew['C'] |= 0x80;
+
+	SetKeyboardState(keyStateNew);
+	SetKeyboardState(keyState);
+#endif
+#else
+	m_activeView->SendTextToConsole(L"\x3");
+#endif
+
+	return 0;
+}
+// vds: Interupt <<
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+
 LRESULT MainFrame::OnHelp(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
 	::HtmlHelp(m_hWnd, (Helpers::GetModulePath(NULL) + wstring(L"console.chm")).c_str(), HH_DISPLAY_TOPIC, NULL);
@@ -1799,7 +1894,7 @@ void MainFrame::AdjustAndResizeConsoleView(CRect& rectView)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool MainFrame::CreateNewConsole(DWORD dwTabIndex, const wstring& strStartupDir /*= wstring(L"")*/, const wstring& strStartupCmd /*= wstring(L"")*/, const wstring& strDbgCmdLine /*= wstring(L"")*/)
+bool MainFrame::CreateNewConsole(DWORD dwTabIndex, const wstring& strStartupDir /*= wstring(L"")*/, const wstring& strStartupCmd /*= wstring(L"")*/, const wstring& strPostedCmd /*= wstring(L"")*/, const wstring& strDbgCmdLine /*= wstring(L"")*/) // vds: posted command
 {
 	if (dwTabIndex >= g_settingsHandler->GetTabSettings().tabDataVector.size()) return false;
 
@@ -1885,6 +1980,8 @@ bool MainFrame::CreateNewConsole(DWORD dwTabIndex, const wstring& strStartupDir 
 	{
 		ShowTabs(TRUE);
 	}
+
+	consoleView->SendTextToConsole(strPostedCmd.c_str()); // vds: posted command
 
 	return true;
 }

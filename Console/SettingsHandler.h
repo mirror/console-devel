@@ -411,6 +411,8 @@ struct ShellSettings : public SettingsBase
 
 	bool	bRunConsoleMenItem;
 	bool	bRunConsoleTabMenuItem;
+	bool	bPostConsoleMenItem;
+	bool	bPostConsoleTabMenuItem;
 };
 // vds: <<
 
@@ -704,6 +706,8 @@ struct InternationalizationSettings : public SettingsBase
 
 	wstring		strExplorerMenuRunItem;
 	wstring		strExplorerMenuRunWithItem;
+	wstring		strExplorerMenuPostItem;
+	wstring		strExplorerMenuPostWithItem;
 };
 
 // graynm: <<

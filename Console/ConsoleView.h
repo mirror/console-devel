@@ -141,6 +141,13 @@ class ConsoleView
 
 		wstring GetWorkingDir(); // vds: New tab with same working dir
 
+// vds: posted command >>
+#if 1
+		// sends text to the windows console
+		void SendTextToConsole(const wchar_t* pszText);
+#endif
+// vds: posted command <<
+
 	private:
 
 		void OnConsoleChange(bool bResize);
@@ -162,8 +169,12 @@ class ConsoleView
 		void BitBltOffscreen(bool bOnlyCursor = false);
 		void UpdateOffscreen(const CRect& rectBlit);
 
+// vds: posted command >>
+#if 0
 		// sends text to the windows console
 		void SendTextToConsole(const wchar_t* pszText);
+#endif
+// vds: posted command <<
 
 		bool TranslateKeyDown(UINT uMsg, WPARAM wParam, LPARAM /*lParam*/);
 		void ForwardMouseClick(UINT uMsg, WPARAM wParam, const CPoint& point);

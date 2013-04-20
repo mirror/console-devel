@@ -95,7 +95,16 @@ BOOL ConsoleView::PreTranslateMessage(MSG* pMsg)
 		// This prevents WM_CHAR and WM_SYSCHAR messages, enabling stuff like
 		// handling 'dead' characters input and passing all keys to console.
 		if (pMsg->wParam == VK_PACKET) return FALSE;
+
+#if 1
+		//Add Chinese Input Support： >>
+		::TranslateMessage(pMsg);
+		if (!::PeekMessage(pMsg, NULL, 0, 0, PM_NOREMOVE))
+			::DispatchMessage(pMsg);
+		//Add Chinese Input Support: <<
+#else
 		::DispatchMessage(pMsg);
+#endif
 		return TRUE;
 	}
 

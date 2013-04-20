@@ -45,7 +45,8 @@ class MainFrame
 			const wstring strWindowTitle,
 			const vector<wstring>& startupTabs, 
 			const vector<wstring>& startupDirs, 
-			const vector<wstring>& startupCmds, 
+			const vector<wstring>& startupCmds, // vds: posted commands
+			const vector<wstring>& postedCmds, 
 			int nMultiStartSleep, 
 			bool bOneInstance, // vds:
 			const wstring& strDbgCmdLine
@@ -134,6 +135,7 @@ class MainFrame
 			COMMAND_ID_HANDLER(ID_HELP, OnHelp)
 			COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAppAbout)
 			COMMAND_ID_HANDLER(IDC_DUMP_BUFFER, OnDumpBuffer)
+			COMMAND_ID_HANDLER(ID_INTERRUPT, OnInterrupt) // vds: Interupt
 			
 			CHAIN_MSG_MAP(CTabbedFrameImpl<MainFrame>)
 			REFLECT_NOTIFICATIONS()
@@ -208,6 +210,7 @@ class MainFrame
 		LRESULT OnHelp(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 		LRESULT OnAppAbout(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 		LRESULT OnDumpBuffer(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+		LRESULT OnInterrupt(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/); // vds: Interupt
 
 		// vds: >>
 		LRESULT OnSendDdeCommand(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/);
@@ -229,7 +232,7 @@ class MainFrame
 
 	private:
 
-		bool CreateNewConsole(DWORD dwTabIndex, const wstring& strStartupDir = wstring(L""), const wstring& strStartupCmd = wstring(L""), const wstring& strDbgCmdLine = wstring(L""));
+		bool CreateNewConsole(DWORD dwTabIndex, const wstring& strStartupDir = wstring(L""), const wstring& strStartupCmd = wstring(L""), const wstring& strPostedCmd = wstring(L""), const wstring& strDbgCmdLine = wstring(L""));
 		void CloseTab(CTabViewTabItem* pTabItem);
 		void CloseTab(HWND hwndConsoleView);
 
@@ -267,6 +270,7 @@ class MainFrame
 		const vector<wstring>&	m_startupTabs;
 		const vector<wstring>&	m_startupDirs;
 		const vector<wstring>&	m_startupCmds;
+		const vector<wstring>&	m_postedCmds; // vds: posted commands
 		int						m_nMultiStartSleep;
 		bool					m_bOneInstance; // vds:
 		wstring					m_strDbgCmdLine;
