@@ -223,6 +223,11 @@
 #endif
 
 
+// vds: Tab switching management >>
+#include <vector>
+#include <assert.h>
+// vds: Tab switching management <<
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // CCustomTabOwnerImpl
@@ -237,6 +242,11 @@ class CCustomTabOwnerImpl
 // Member variables
 protected:
 	TTabCtrl m_TabCtrl;
+	// vds: Tab switching management >>
+	std::vector<int> m_TabStack;
+	bool m_updateTabHistory;
+	// vds: Tab switching management <<
+
 	WTL::CImageList m_ImageList;
 	int m_cxImage, m_cyImage;
 	int m_nTabAreaHeight;
@@ -249,7 +259,8 @@ public:
 		m_cxImage(16),
 		m_cyImage(16),
 		m_nTabAreaHeight(24),
-		m_nMinTabCountForVisibleTabs(1)
+		m_nMinTabCountForVisibleTabs(1),
+		m_updateTabHistory(true) // vds: Tab switching management
 	{
 		m_bKeepTabsHidden = (m_nMinTabCountForVisibleTabs > 0);
 	}
@@ -545,7 +556,7 @@ public:
 		int nNewTabIndex = -1;
 
 		TTabCtrl::TItem* pItem = m_TabCtrl.CreateNewItem();
-		if(pItem)
+		if (pItem)
 		{
 			pItem->SetText(sTabText);
 			pItem->SetImageIndex(nImageIndex);
@@ -555,8 +566,12 @@ public:
 
 			size_t nOldCount = m_TabCtrl.GetItemCount();
 
+			addToTabStack(nOldCount); // vds: Tab switching management
+
 			// The tab control takes ownership of the new item
 			nNewTabIndex = m_TabCtrl.InsertItem(nOldCount, pItem);
+
+			assert(nOldCount == nNewTabIndex);
 
 			size_t nNewCount = m_TabCtrl.GetItemCount();
 
@@ -669,6 +684,8 @@ public:
 			size_t nOldCount = m_TabCtrl.GetItemCount();
 
 			bSuccess = m_TabCtrl.DeleteItem(nTab);
+
+			removeToTabStack(nTab); // vds: Tab switching management
 
 			size_t nNewCount = m_TabCtrl.GetItemCount();
 
@@ -814,6 +831,72 @@ public:
 
 		return bSuccess;
 	}
+
+// vds: Tab switching management >>
+	unsigned int getTabStackIndex(int tabCursor)
+	{
+		for (unsigned int i = m_TabStack.size(); i > 0;) {
+			int cursor = m_TabStack[--i];
+			if (cursor != tabCursor)
+				continue;
+
+			return i;
+		}
+
+		assert(false);
+		return -1;
+	}
+
+	void addToTabStack(int tabCursor)
+	{
+		m_TabStack.push_back(tabCursor);
+	}
+
+	void removeToTabStack(int tabCursor)
+	{
+		unsigned int tabIndex = getTabStackIndex(tabCursor);
+
+		m_TabStack.erase(m_TabStack.begin() + tabIndex);
+
+		for (unsigned int i = 0; i < m_TabStack.size(); ++i) {
+			if (m_TabStack[i] < tabCursor)
+				continue;
+
+			m_TabStack[i] -= 1;
+		}
+	}
+
+	int getNextTabCursor(int tabCursor)
+	{
+		unsigned int tabIndex = getTabStackIndex(tabCursor);
+
+		if (tabIndex == 0)
+			return m_TabStack[m_TabStack.size() - 1];
+
+		return m_TabStack[tabIndex - 1];
+	}
+
+	int getPreviousTabCursor(int tabCursor)
+	{
+		unsigned int tabIndex = getTabStackIndex(tabCursor);
+
+		if (tabIndex == m_TabStack.size() - 1)
+			return m_TabStack[0];
+
+		return m_TabStack[tabIndex + 1];
+	}
+
+	void setTabCursor(int tabCursor)
+	{
+		if (!m_updateTabHistory)
+			return;
+
+		unsigned int tabIndex = getTabStackIndex(tabCursor);
+		
+		m_TabStack.erase(m_TabStack.begin() + tabIndex);
+		m_TabStack.push_back(tabCursor);
+	}	
+// vds: Tab switching management <<
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1004,6 +1087,18 @@ public:
 		return 0;
 	}
 
+	// vds: Tab switching management >>
+	BOOL PreTranslateMessage(MSG* pMsg)
+	{
+		if (pMsg->message == WM_KEYUP && pMsg->wParam == VK_CONTROL) {
+			int tabCursor = m_TabCtrl.GetCurSel();
+			setTabCursor(tabCursor);
+		}
+
+		return TBase::PreTranslateMessage(pMsg);
+	}
+	// vds: Tab switching management <<
+
 	LRESULT OnSettingChange(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 	{
 		// Be sure tab gets message before we recalculate the tab area height,
@@ -1189,6 +1284,8 @@ public:
 						}
 
 						::SetFocus(hWndNew);
+
+						setTabCursor(nNewTab); // vds: Tab switching management
 					}
 				}
 			}

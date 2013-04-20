@@ -40,6 +40,8 @@ class DlgSettingsBehavior
 			DDX_CHECK(IDC_INTEGRATE_WITH_EXPLORER, m_nIntegrateWithExplorer)
 			DDX_CHECK(IDC_RUN_CONSOLE, m_nRunConsoleMenuItem)
 			DDX_CHECK(IDC_RUN_CONSOLE_TAB, m_nRunConsoleTabMenuItem)
+			DDX_CHECK(IDC_POST_CONSOLE, m_nPostConsoleMenuItem)
+			DDX_CHECK(IDC_POST_CONSOLE_TAB, m_nPostConsoleTabMenuItem)
 			// vds: <<
 		END_DDX_MAP()
 
@@ -95,6 +97,8 @@ class DlgSettingsBehavior
 		int					m_nIntegrateWithExplorer;
 		int					m_nRunConsoleMenuItem;
 		int					m_nRunConsoleTabMenuItem;
+		int					m_nPostConsoleMenuItem;
+		int					m_nPostConsoleTabMenuItem;
 		// vds: <<
 
 };

@@ -1115,6 +1115,8 @@ OneInstanceSettings& OneInstanceSettings::operator=(const OneInstanceSettings& o
 ShellSettings::ShellSettings()
 : bRunConsoleMenItem(true)
 , bRunConsoleTabMenuItem(true)
+, bPostConsoleMenItem(true)
+, bPostConsoleTabMenuItem(true)
 {
 }
 
@@ -1143,6 +1145,8 @@ bool ShellSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 	XmlHelper::GetAttribute(pShellElement, CComBSTR(L"run_console_menu_item"), bRunConsoleMenItem, true);
 	XmlHelper::GetAttribute(pShellElement, CComBSTR(L"run_console_tab_menu_item"), bRunConsoleTabMenuItem, true);
+	XmlHelper::GetAttribute(pShellElement, CComBSTR(L"post_console_menu_item"), bPostConsoleMenItem, true);
+	XmlHelper::GetAttribute(pShellElement, CComBSTR(L"post_console_tab_menu_item"), bPostConsoleTabMenuItem, true);
 
 	return true;
 }
@@ -1162,6 +1166,8 @@ bool ShellSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 	XmlHelper::SetAttribute(pShellElement, CComBSTR(L"run_console_menu_item"), bRunConsoleMenItem);
 	XmlHelper::SetAttribute(pShellElement, CComBSTR(L"run_console_tab_menu_item"), bRunConsoleTabMenuItem);
+	XmlHelper::SetAttribute(pShellElement, CComBSTR(L"post_console_menu_item"), bPostConsoleMenItem);
+	XmlHelper::SetAttribute(pShellElement, CComBSTR(L"post_console_tab_menu_item"), bPostConsoleTabMenuItem);
 
 	return true;
 }
@@ -1340,6 +1346,8 @@ ShellSettings& ShellSettings::operator=(const ShellSettings& other)
 {
 	bRunConsoleMenItem		= other.bRunConsoleMenItem;
 	bRunConsoleTabMenuItem	= other.bRunConsoleTabMenuItem;
+	bPostConsoleMenItem		= other.bPostConsoleMenItem;
+	bPostConsoleTabMenuItem	= other.bPostConsoleTabMenuItem;
 
 	return *this;
 }
@@ -1467,6 +1475,7 @@ HotKeys::HotKeys()
 	commands.push_back(shared_ptr<CommandData>(new CommandData(L"scrollpageright",	ID_SCROLL_PAGE_RIGHT,	L"Scroll buffer page right")));
 
 	commands.push_back(shared_ptr<CommandData>(new CommandData(L"dumpbuffer",	IDC_DUMP_BUFFER,	L"Dump screen buffer")));
+	commands.push_back(shared_ptr<CommandData>(new CommandData(L"interrupt",	ID_INTERRUPT,		L"Interrupt"))); // vds: Interupt
 
 	// global commands
 	commands.push_back(shared_ptr<CommandData>(new CommandData(L"activate",	IDC_GLOBAL_ACTIVATE,	L"Activate Console (global)", true)));
@@ -2066,8 +2075,10 @@ void TabSettings::SetDefaults(const wstring& defaultShell, const wstring& defaul
 //////////////////////////////////////////////////////////////////////////////
 
 InternationalizationSettings::InternationalizationSettings():
-strExplorerMenuRunItem(L"Run Console"),
-strExplorerMenuRunWithItem(L"Run Console Tab")
+strExplorerMenuRunItem(L"&Run Console"),
+strExplorerMenuRunWithItem(L"&Run Console Tab"),
+strExplorerMenuPostItem(L"&Post Console"),
+strExplorerMenuPostWithItem(L"&Post Console Tab")
 {
 }
 
@@ -2105,6 +2116,10 @@ bool InternationalizationSettings::Load(const CComPtr<IXMLDOMElement>& pSettings
 		XmlHelper::GetAttribute(pElement, CComBSTR(L"title"), strExplorerMenuRunItem, strExplorerMenuRunItem); pElement=NULL;
 	if(SUCCEEDED(XmlHelper::GetDomElement(pLanguageElement, CComBSTR(L"explorer_menu_run_with"), pElement)))
 		XmlHelper::GetAttribute(pElement, CComBSTR(L"title"), strExplorerMenuRunWithItem, strExplorerMenuRunWithItem); pElement=NULL;
+	if(SUCCEEDED(XmlHelper::GetDomElement(pLanguageElement, CComBSTR(L"explorer_menu_post"), pElement)))
+		XmlHelper::GetAttribute(pElement, CComBSTR(L"title"), strExplorerMenuPostItem, strExplorerMenuPostItem); pElement=NULL;
+	if(SUCCEEDED(XmlHelper::GetDomElement(pLanguageElement, CComBSTR(L"explorer_menu_post_with"), pElement)))
+		XmlHelper::GetAttribute(pElement, CComBSTR(L"title"), strExplorerMenuPostWithItem, strExplorerMenuPostWithItem); pElement=NULL;
 
 	return true;
 }
@@ -2131,6 +2146,8 @@ InternationalizationSettings& InternationalizationSettings::operator=(const Inte
 	strSelectedLanguage = other.strSelectedLanguage;
 	strExplorerMenuRunItem = other.strExplorerMenuRunItem;
 	strExplorerMenuRunWithItem = other.strExplorerMenuRunWithItem;
+	strExplorerMenuPostItem = other.strExplorerMenuPostItem;
+	strExplorerMenuPostWithItem = other.strExplorerMenuPostWithItem;
 
 	return *this;
 }

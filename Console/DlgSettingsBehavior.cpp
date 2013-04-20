@@ -44,6 +44,8 @@ LRESULT DlgSettingsBehavior::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPAR
 	m_nIntegrateWithExplorer = m_behaviorSettings.shellSettings.IsConsoleIntegratedWithExplorer();
 	m_nRunConsoleMenuItem = m_behaviorSettings.shellSettings.bRunConsoleMenItem ? 1 : 0;
 	m_nRunConsoleTabMenuItem = m_behaviorSettings.shellSettings.bRunConsoleTabMenuItem ? 1 : 0;
+	m_nPostConsoleMenuItem = m_behaviorSettings.shellSettings.bPostConsoleMenItem ? 1 : 0;
+	m_nPostConsoleTabMenuItem = m_behaviorSettings.shellSettings.bPostConsoleTabMenuItem ? 1 : 0;
 	// vds: <<
 
 	CUpDownCtrl	spin;
@@ -110,6 +112,8 @@ LRESULT DlgSettingsBehavior::OnCloseCmd(WORD /*wNotifyCode*/, WORD wID, HWND /*h
 		}
 		m_behaviorSettings.shellSettings.bRunConsoleMenItem = (m_nRunConsoleMenuItem > 0);
 		m_behaviorSettings.shellSettings.bRunConsoleTabMenuItem = (m_nRunConsoleTabMenuItem > 0);
+		m_behaviorSettings.shellSettings.bPostConsoleMenItem = (m_nPostConsoleMenuItem > 0);
+		m_behaviorSettings.shellSettings.bPostConsoleTabMenuItem = (m_nPostConsoleTabMenuItem > 0);
 		// vds: <<
 
 		BehaviorSettings& behaviorSettings = g_settingsHandler->GetBehaviorSettings();
@@ -235,10 +239,14 @@ void DlgSettingsBehavior::EnableOnInstanceControls()
 
 	GetDlgItem(IDC_RUN_CONSOLE).EnableWindow(FALSE);
 	GetDlgItem(IDC_RUN_CONSOLE_TAB).EnableWindow(FALSE);
+	GetDlgItem(IDC_POST_CONSOLE).EnableWindow(FALSE);
+	GetDlgItem(IDC_POST_CONSOLE_TAB).EnableWindow(FALSE);
 	
 	if (m_nIntegrateWithExplorer) {
 		GetDlgItem(IDC_RUN_CONSOLE).EnableWindow();
 		GetDlgItem(IDC_RUN_CONSOLE_TAB).EnableWindow();
+		GetDlgItem(IDC_POST_CONSOLE).EnableWindow();
+		GetDlgItem(IDC_POST_CONSOLE_TAB).EnableWindow();
 	}
 }
 // vds: <<

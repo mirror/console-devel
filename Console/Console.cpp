@@ -101,6 +101,7 @@ void ParseCommandLine
 	vector<wstring>& startupTabs, 
 	vector<wstring>& startupDirs, 
 	vector<wstring>& startupCmds, 
+	vector<wstring>& postedCmds, // vds: posted commands
 	int& nMultiStartSleep, 
 	wstring& strDbgCmdLine,
 	WORD& iFlags // vds
@@ -149,6 +150,15 @@ void ParseCommandLine
 			if (i == argc) break;
 			startupCmds.push_back(argv[i]);
 		}
+		// vds: posted command >>
+		else if (wstring(argv[i]) == wstring(L"-p"))
+		{
+			// posted cmd
+			++i;
+			if (i == argc) break;
+			postedCmds.push_back(argv[i]);
+		}
+		// vds: posted command <<
 		else if (wstring(argv[i]) == wstring(L"-ts"))
 		{
 			// startup tab sleep for multiple tabs
@@ -194,6 +204,7 @@ void ParseCommandLine
 	// make sure that startupDirs and startupCmds are at least as big as startupTabs
 	if (startupDirs.size() < startupTabs.size()) startupDirs.resize(startupTabs.size());
 	if (startupCmds.size() < startupTabs.size()) startupCmds.resize(startupTabs.size());
+	if (postedCmds.size() < startupTabs.size()) postedCmds.resize(startupTabs.size()); // vds: posted commands
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -225,6 +236,7 @@ wstring BuildCommandLine(
 	vector<wstring>& startupTabs, 
 	vector<wstring>& startupDirs, 
 	vector<wstring>& startupCmds, 
+	vector<wstring>& postedCmds, // vds: posted commands
 	int nMultiStartSleep, 
 	wstring strDbgCmdLine,
 	WORD iFlags
@@ -247,6 +259,7 @@ wstring BuildCommandLine(
 	}
 	if (startupDirs.size() < startupTabs.size()) startupDirs.resize(startupTabs.size());
 	if (startupCmds.size() < startupTabs.size()) startupCmds.resize(startupTabs.size());
+	if (postedCmds.size() < startupTabs.size()) postedCmds.resize(startupTabs.size()); // vds: posted command
 
 	TCHAR workingDirectory[_MAX_PATH + 1];
 	GetCurrentDirectory(_MAX_PATH, workingDirectory);
@@ -262,10 +275,12 @@ wstring BuildCommandLine(
 		wstring tab = startupTabs[i];
 		wstring dir = startupDirs[i];
 		wstring cmd = startupCmds[i];
+		wstring postedCmd = postedCmds[i]; // vds: posted command
 
 		ret += _T(" -t \"") + tab + _T("\"");
 		ret += _T(" -d \"") + dir + _T("\"");
 		ret += _T(" -r \"") + EscapeCommand(cmd) + _T("\"");
+		ret += _T(" -p \"") + EscapeCommand(postedCmd) + _T("\""); // vds: posted commands
 	}
 	for (unsigned int i = startupTabs.size(); i < startupDirs.size(); ++i) {
 		wstring dir = startupDirs[i];
@@ -277,6 +292,13 @@ wstring BuildCommandLine(
 
 		ret += _T(" -r \"") + EscapeCommand(cmd) + _T("\"");
 	}
+	// vds: posted commands >>
+	for (unsigned int i = startupTabs.size(); i < postedCmds.size(); ++i) {
+		wstring cmd = postedCmds[i];
+
+		ret += _T(" -r \"") + EscapeCommand(cmd) + _T("\"");
+	}
+	// vds: posted commands <<
 
 	if (nMultiStartSleep != 0) {
 		TCHAR szMultiStartSleep[256];
@@ -322,6 +344,7 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 	vector<wstring>	startupTabs;
 	vector<wstring>	startupDirs;
 	vector<wstring>	startupCmds;
+	vector<wstring>	postedCmds; // vds: posted commands
 	int				nMultiStartSleep = 0;
 	wstring			strDbgCmdLine(L"");
 	WORD			iFlags = 0; // vds
@@ -333,6 +356,7 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 		startupTabs, 
 		startupDirs, 
 		startupCmds, 
+		postedCmds, 
 		nMultiStartSleep, 
 		strDbgCmdLine,
 		iFlags); // vds
@@ -360,7 +384,7 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 
 	// create main window
 	NoTaskbarParent noTaskbarParent;
-	MainFrame wndMain(strWindowTitle, startupTabs, startupDirs, startupCmds, nMultiStartSleep, bOneInstance, strDbgCmdLine); // vds:
+	MainFrame wndMain(strWindowTitle, startupTabs, startupDirs, startupCmds, postedCmds, nMultiStartSleep, bOneInstance, strDbgCmdLine); // vds:
 
 	if (!g_settingsHandler->GetAppearanceSettings().stylesSettings.bTaskbarButton && !bOneInstance) // vds:
 	{
@@ -387,6 +411,7 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 			startupTabs, 
 			startupDirs, 
 			startupCmds, 
+			postedCmds,
 			nMultiStartSleep, 
 			strDbgCmdLine,
 			iFlags);

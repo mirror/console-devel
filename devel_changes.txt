@@ -1,93 +1,117 @@
 v2.00
 =====
 
-Build 148
-=========
+- Integrate the changes of ClangOnWin to improve Chinese support.
+
+Build 148c (16/10/2012)
+=======================
+
+- Like in most code editors (Visual Studio, Notepad++, UltraEdit, etc.) the Ctrl-TAB switch the tabs in the order they have been visited instead of in the order they are displayed.
+
+
+Build 148b (8/10/2012)
+======================
+
+- Introduce a new command 'Interupt' that the user can associate to a short cut (e.g.: Ctrl+I) to replace Ctrl+C that is usually associated to the Copy selection command.
+
+- Introduce the -p flag that allow to post a text to console. This is a first step toward the replacement of Cmd.exe by Console.exe to manage the .bat, .cmd files.
+
+- Fix a bug in the Extplorer integration dll that prevent the explorer integration to introduce more than one sub menu in the explorer context menu (e.g.: Run Console and Run Console Console Tab).
+
+
+Build 148a (6/9/2012)
+=====================
+
+- Make sure that commands that contains path with space are passed correctly to an external Console.exe when it run in one instance mode.
+
+
+Build 148 (4/2/2012)
+====================
 
 Most changes in this build were done by Kirill. Thanks man!
 
-- add configuration setting to allow cmd-style copy/clear selection click
+- Add configuration setting to allow cmd-style copy/clear selection click
 
-- allow double-click to select a word (text between two spaces)
+- Allow double-click to select a word (text between two spaces)
 
-- allow new selection without clearing the old selection
+- Allow new selection without clearing the old selection
 
-- prevent pasting by mouse if pasting by menu is disabled
+- Prevent pasting by mouse if pasting by menu is disabled
 
-- limited max window transparency to 250 (i.e. min alpha is 5)
+- Limited max window transparency to 250 (i.e. min alpha is 5)
 
 
 
-Build 147
-=========
+Build 147 (7/8/2011)
+====================
 
-- fixed keyboard switching for Vista/Win7
+- Fixed keyboard switching for Vista/Win7
 
-- fixed visible scrollbars on startup with 'Show scrollbars' option turned off
+- Fixed visible scrollbars on startup with 'Show scrollbars' option turned off
 
-- added support for flat scrollbars
+- Added support for flat scrollbars
 
-- added icons in the File->New Tab menu (thanks to chrisz for the patch)
+- Added icons in the File->New Tab menu (thanks to chrisz for the patch)
 
-- added an option for using a default program icon in the tab menu
+- Added an option for using a default program icon in the tab menu
 
-- fixed exit codes
+- Fixed exit codes
 
-- new inject code (many thanks to Jason Hood, creator of AnsiCon http://adoxa.110mb.com/ansicon
+- New inject code (many thanks to Jason Hood, creator of AnsiCon http://adoxa.110mb.com/ansicon
   for the code) The new injection code enables running 32-bit shells from 64-bit Console, 
   starting .NET console applications (e.g. powershell) directly, it doesn't use CreateRemoteThread,
   so Windows patches and antivirus software that disables the call should not cause problems. The
   code still hasn't been tested with Vista/Win7 UAC, but it does work for shell processes started
   as another user, so we'll have that feature in Console soon as well.
   
-- tabs can now be opened as a different user
+- Tabs can now be opened as a different user
 
-- expanded 'trim tab titles' options - you can now show characters at the end of the string
+- Expanded 'trim tab titles' options - you can now show characters at the end of the string
 
-- improved command text resolution for tab titles
+- Improved command text resolution for tab titles
 
-- fixed invalid window position after Windows unlock (BR#2912069)
+- Fixed invalid window position after Windows unlock (BR#2912069)
 
 
 Build 146
 =========
 
-- a better Win7 lockup fix (again, thanks to akirill for the patch :-)
+- A better Win7 lockup fix (again, thanks to akirill for the patch :-)
 
-- removed msv*90.dll dependencies
+- Removed msv*90.dll dependencies
 
-- better error messages on shell startup
+- Better error messages on shell startup
 
-- dump buffer now dumps to %TEMP%\console.dump
+- Dump buffer now dumps to %TEMP%\console.dump
 
-- configuration load fix
+- Configuration load fix
 
-- better handling of windows settings' change
+- Better handling of windows settings' change
 
-- added 64-bit build
+- Added 64-bit build
 
-- most fixes in this build are by Kirill :-)
+- Most fixes in this build are by Kirill :-)
 
 
 Build 145
 =========
 
-- [BR#2722494] alpha transparency is now set properly for a pinned-to-desktop 
+- [BR#2722494] Alpha transparency is now set properly for a pinned-to-desktop 
   Console window
 
 - [BR#2547017] Tab tooltips now show complete title (thanks to Phillip Foose for the patch)
 
-- a small speed optimization for relative backgrounds
+- A small speed optimization for relative backgrounds
 
-- fixed Win7 lockup (thanks to akirill for the patch)
+- Fixed Win7 lockup (thanks to akirill for the patch)
 
 
 Build 144
 ---------
 
-- tray icon settings were not always observed, fixed
+- Tray icon settings were not always observed, fixed
 
-- optimized text repaint for relative backgrounds
+- Aptimized text repaint for relative backgrounds
 
 
 Build 143
@@ -96,13 +120,13 @@ Build 143
 - [BR#2569915] Console buffer rows can now be set to max 9999 using arrows in 
   the settings dialog
   
-- invalid console cursor coordinates calculation lead to crash when leaving Console
+- Invalid console cursor coordinates calculation lead to crash when leaving Console
   window while selecting text
 
 - [BR#2555908] If there was only one tab defined on Console startup, that tab could
   be deleted. This would crash Console
   
-- another attempt at fixing ClearType problems
+- Another attempt at fixing ClearType problems
 
 
 Build 142
@@ -112,13 +136,13 @@ Build 142
   a backslash. This will fix problems with startup dir defined as 'C:'. Updated
   documentation for -d parameter
 
-- selection start will now pause window scrolling (e.g. a long dir command). ESC wil
+- Selection start will now pause window scrolling (e.g. a long dir command). ESC wil
   unpause it (but it will not clear the selection) Clearing the selection (copy or not)
   will re-enable scrolling
   
-- added 'stop scrolling' command (and a hotkey) (ESC re-enables)
+- Added 'stop scrolling' command (and a hotkey) (ESC re-enables)
   
-- added option for starting Windows console window hidden (previous behavior, was causing
+- Added option for starting Windows console window hidden (previous behavior, was causing
   problems with some GUI apps started from Console)
 
 
@@ -131,9 +155,9 @@ Build 141
   
 - Console is now restored if minimized when activated using a global hotkey
 
-- [BR#1969628] fixed a painting problem with applications that reduce buffer size
+- [BR#1969628] Fixed a painting problem with applications that reduce buffer size
 
-- [BR#2114134] attempt at fixing the crash caused by a new process exiting before new 
+- [BR#2114134] Attempt at fixing the crash caused by a new process exiting before new 
   Console tab is initialized
 
 

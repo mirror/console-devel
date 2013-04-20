@@ -384,6 +384,12 @@
             extended="0"
             code="112"
             command="dumpbuffer" />
+    <hotkey ctrl="1"
+            shift="0"
+            alt="0"
+            extended="0"
+            code="73"
+            command="interupt" />
     <hotkey ctrl="0"
             shift="0"
             alt="0"
