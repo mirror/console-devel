@@ -183,14 +183,6 @@ bool ConsoleHandler::StartShellProcess
 		strShellCmdLine += strInitialCmd;
 	}
 
-	wstring	strStartupTitle(strConsoleTitle);
-
-	if (strStartupTitle.length() == 0)
-	{
-		strStartupTitle = L"Console2 command window";
-//		strStartupTitle = str(wformat(L"Console2 command window 0x%08X") % this);
-	}
-
 //	wstring strStartupDir((strUsername.length() > 0) ? Helpers::ExpandEnvironmentStringsForUser(userToken, strInitialDir) : Helpers::ExpandEnvironmentStrings(strInitialDir));
 	wstring strStartupDir((strUsername.length() > 0) ? strInitialDir : Helpers::ExpandEnvironmentStrings(strInitialDir));
 
@@ -224,7 +216,7 @@ bool ConsoleHandler::StartShellProcess
 	::ZeroMemory(&si, sizeof(STARTUPINFO));
 
 	si.cb			= sizeof(STARTUPINFO);
-	si.lpTitle		= const_cast<wchar_t*>(strStartupTitle.c_str());
+	si.lpTitle		= NULL;
 
 	if (g_settingsHandler->GetConsoleSettings().bStartHidden)
 	{

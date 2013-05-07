@@ -43,6 +43,8 @@ struct ConsoleSettings : public SettingsBase
 	DWORD		dwChangeRefreshInterval;
 	DWORD		dwRows;
 	DWORD		dwColumns;
+	DWORD		dwHeight;
+	DWORD		dwWidth;
 	DWORD		dwBufferRows;
 	DWORD		dwBufferColumns;
 

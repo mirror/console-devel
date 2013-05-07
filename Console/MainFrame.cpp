@@ -274,6 +274,10 @@ LRESULT MainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
 	CreateAcceleratorTable();
 	RegisterGlobalHotkeys();
 
+	SetWindowPos(0, 0, 0,
+		g_settingsHandler->GetConsoleSettings().dwWidth,
+		g_settingsHandler->GetConsoleSettings().dwHeight,
+		SWP_NOMOVE|SWP_NOZORDER|SWP_NOSENDCHANGING);
 	AdjustWindowSize(false);
 
 	CRect rectWindow;
@@ -340,6 +344,8 @@ LRESULT MainFrame::OnClose(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, 
 
 		positionSettings.nX	= rectWindow.left;
 		positionSettings.nY	= rectWindow.top;
+		consoleSettings.dwHeight = rectWindow.bottom-rectWindow.top;
+		consoleSettings.dwWidth = rectWindow.right-rectWindow.left;
 
 		bSaveSettings = true;
 	}
@@ -821,8 +827,8 @@ LRESULT MainFrame::OnTimer(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL
 {
 	if (wParam == TIMER_SIZING)
 	{
-		KillTimer(TIMER_SIZING);
 		ResizeWindow();
+		KillTimer(TIMER_SIZING);
 	}
 	// vds: >>
 	else if (wParam == TIMER_TIMEOUT)
@@ -983,16 +989,8 @@ void MainFrame::CreateNewTab(wchar_t *lpstrCmdLine)
 			}
 		}
 		// Restore the application if it has been minimized:
-		WINDOWPLACEMENT placement;
-		memset(&placement, 0, sizeof(WINDOWPLACEMENT));
-		placement.length = sizeof(WINDOWPLACEMENT);
-
-		GetWindowPlacement(&placement);
-		placement.flags = WPF_ASYNCWINDOWPLACEMENT;
-		placement.showCmd = SW_RESTORE;
-		SetWindowPlacement(&placement);
-
-		SetFocus();
+		if (IsIconic()) ShowWindow(SW_RESTORE);
+		SetForegroundWindow(m_hWnd);
 	}
 }
 // vds: >>
@@ -1070,52 +1068,21 @@ LRESULT MainFrame::OnUpdateTitles(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*
 	shared_ptr<ConsoleView>	consoleView(itView->second);
 	WindowSettings&			windowSettings	= g_settingsHandler->GetAppearanceSettings().windowSettings;
 
-	if (windowSettings.bUseConsoleTitle)
+	CString	strTabTitle(consoleView->GetTitle());
+	CString	strCommandText(consoleView->GetConsoleCommand());
+	CString strCurrentDirectory = m_activeView->GetConsoleHandler().GetConsoleInfo()->currentDirectory;
+
+	strCurrentDirectory = strCurrentDirectory.Right(strCurrentDirectory.GetLength()-strCurrentDirectory.ReverseFind(L'\\')-1);
+	if (strTabTitle.IsEmpty() || strTabTitle.Find(L"system32\\cmd.exe") != -1)
 	{
-		CString	strTabTitle(consoleView->GetTitle());
-
-		UpdateTabTitle(consoleView, strTabTitle);
-
-		if ((m_strCmdLineWindowTitle.GetLength() == 0) &&
-			(windowSettings.bUseTabTitles) && 
-			(consoleView == m_activeView))
-		{
-			m_strWindowTitle = consoleView->GetTitle();
-			SetWindowText(m_strWindowTitle);
-			if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon) SetTrayIcon(NIM_MODIFY);
-		}
+		strTabTitle = m_strWindowTitle = strCurrentDirectory;	
+		if (windowSettings.bShowCommand && !strCommandText.IsEmpty()) m_strWindowTitle += strCommandText;
 	}
 	else
-	{
-		CString	strCommandText(consoleView->GetConsoleCommand());
-		CString	strTabTitle(consoleView->GetTitle());
+		m_strWindowTitle = strTabTitle;
 
-		if (m_strCmdLineWindowTitle.GetLength() != 0)
-		{
-			m_strWindowTitle = m_strCmdLineWindowTitle;
-		}
-		else
-		{
-			m_strWindowTitle = windowSettings.strTitle.c_str();
-		}
-
-		if (consoleView == m_activeView)
-		{
-			if ((m_strCmdLineWindowTitle.GetLength() == 0) && (windowSettings.bUseTabTitles))
-			{
-				m_strWindowTitle = strTabTitle;
-			}
-
-			if (windowSettings.bShowCommand)	m_strWindowTitle += strCommandText;
-
-			SetWindowText(m_strWindowTitle);
-			if (g_settingsHandler->GetAppearanceSettings().stylesSettings.bTrayIcon) SetTrayIcon(NIM_MODIFY);
-		}
-		
-		if (windowSettings.bShowCommandInTabs) strTabTitle += strCommandText;
-
-		UpdateTabTitle(consoleView, strTabTitle);
-	}
+	SetWindowText(m_strWindowTitle);
+	UpdateTabTitle(consoleView, m_strWindowTitle);
 
 	return 0;
 }
@@ -1521,35 +1488,6 @@ LRESULT MainFrame::OnEditStopScrolling(WORD /*wNotifyCode*/, WORD /*wID*/, HWND 
 	if (!m_activeView) return 0;
 
 	m_activeView->GetConsoleHandler().StopScrolling();
-
-	return 0;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-
-//////////////////////////////////////////////////////////////////////////////
-
-LRESULT MainFrame::OnEditRenameTab(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
-{
-	if (!m_activeView) return 0;
-
-	DlgRenameTab dlg(m_activeView->GetTitle());
-
-	if (dlg.DoModal() == IDOK)
-	{
-	
-		m_activeView->SetTitle(dlg.m_strTabName);
-
-		WindowSettings& windowSettings = g_settingsHandler->GetAppearanceSettings().windowSettings;
-		CString			strTabTitle(dlg.m_strTabName);
-
-		if (windowSettings.bShowCommandInTabs) strTabTitle += m_activeView->GetConsoleCommand();
-
-		UpdateTabTitle(m_activeView, strTabTitle);
-
-		if (windowSettings.bUseTabTitles) SetWindowText(m_activeView->GetTitle());
-	}
 
 	return 0;
 }
@@ -2176,7 +2114,6 @@ void MainFrame::SetWindowStyles()
 	DWORD	dwStyle		= GetWindowLong(GWL_STYLE);
 	DWORD	dwExStyle	= GetWindowLong(GWL_EXSTYLE);
 
-	dwStyle &= ~WS_MAXIMIZEBOX;
 	if (!stylesSettings.bCaption)	dwStyle &= ~WS_CAPTION;
 	if (!stylesSettings.bResizable)	dwStyle &= ~WS_THICKFRAME;
 
@@ -2387,6 +2324,16 @@ void MainFrame::ShowMenu(BOOL bShow)
 
 //////////////////////////////////////////////////////////////////////////////
 
+void MainFrame::ToggleMenu()
+{
+	ShowMenu(!m_bMenuVisible);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+
 void MainFrame::ShowToolbar(BOOL bShow)
 {
 	m_bToolbarVisible = bShow;
@@ -2556,14 +2503,6 @@ void MainFrame::AdjustWindowSize(bool bResizeConsole, bool bMaxOrRestore /*= fal
 	AdjustWindowRect(clientRect);
 
 //	TRACE(L"AdjustWindowSize: %ix%i\n", clientRect.Width(), clientRect.Height());
-
-	SetWindowPos(
-		0, 
-		0, 
-		0, 
-		clientRect.Width(), 
-		clientRect.Height() + 4, 
-		SWP_NOMOVE|SWP_NOZORDER|SWP_NOSENDCHANGING);
 
 	// update window width and height
 	CRect rectWindow;

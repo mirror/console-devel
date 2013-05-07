@@ -142,10 +142,12 @@ struct ConsoleInfo
 	: csbi()
 	, textChanged(false)
 	{
+		memset((void*)&currentDirectory, '\0', sizeof(TCHAR)*8092);
 	}
 
 	CONSOLE_SCREEN_BUFFER_INFO	csbi;
 	bool						textChanged;
+	TCHAR						currentDirectory[8092];
 };
 
 //////////////////////////////////////////////////////////////////////////////

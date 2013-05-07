@@ -117,8 +117,7 @@ class ConsoleView
 
 		void SetResizing(bool bResizing);
 		void SetActive(bool bActive);
-		void SetTitle(const CString& strTitle);
-		const CString& GetTitle() const { return m_strTitle; }
+		CString GetTitle();
 
 		CString GetConsoleCommand();
 		CIcon& GetIcon(bool bBigIcon = true) { return bBigIcon ? bigIcon : smallIcon; }
