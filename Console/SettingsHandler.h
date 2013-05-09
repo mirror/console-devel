@@ -43,6 +43,12 @@ struct ConsoleSettings : public SettingsBase
 	DWORD		dwChangeRefreshInterval;
 	DWORD		dwRows;
 	DWORD		dwColumns;
+// john-peterson: automatic windows arrangement >>
+#if 1
+	DWORD    dwHeight; 
+	DWORD    dwWidth; 
+#endif
+// john-peterson: automatic windows arrangement <<	
 	DWORD		dwBufferRows;
 	DWORD		dwBufferColumns;
 

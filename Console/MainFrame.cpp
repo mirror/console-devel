@@ -273,6 +273,15 @@ LRESULT MainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
 
 	CreateAcceleratorTable();
 	RegisterGlobalHotkeys();
+	
+// john-peterson: automatic windows arrangement >>
+#if 1
+	SetWindowPos(0, 0, 0,
+		g_settingsHandler->GetConsoleSettings().dwWidth,
+		g_settingsHandler->GetConsoleSettings().dwHeight,
+		SWP_NOMOVE|SWP_NOZORDER|SWP_NOSENDCHANGING); 	
+#endif
+// john-peterson: automatic windows arrangement <<
 
 	AdjustWindowSize(false);
 
@@ -340,6 +349,13 @@ LRESULT MainFrame::OnClose(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, 
 
 		positionSettings.nX	= rectWindow.left;
 		positionSettings.nY	= rectWindow.top;
+		
+// john-peterson: automatic windows arrangement >>
+#if 1
+		consoleSettings.dwHeight = rectWindow.bottom-rectWindow.top;
+		consoleSettings.dwWidth = rectWindow.right-rectWindow.left; 
+#endif
+// john-peterson: automatic windows arrangement <<
 
 		bSaveSettings = true;
 	}
@@ -983,6 +999,11 @@ void MainFrame::CreateNewTab(wchar_t *lpstrCmdLine)
 			}
 		}
 		// Restore the application if it has been minimized:
+// john-peterson: automatic windows arrangement >>
+#if 1
+		if (IsIconic()) ShowWindow(SW_RESTORE);
+		SetForegroundWindow(m_hWnd); 
+#else
 		WINDOWPLACEMENT placement;
 		memset(&placement, 0, sizeof(WINDOWPLACEMENT));
 		placement.length = sizeof(WINDOWPLACEMENT);
@@ -993,6 +1014,8 @@ void MainFrame::CreateNewTab(wchar_t *lpstrCmdLine)
 		SetWindowPlacement(&placement);
 
 		SetFocus();
+#endif
+// john-peterson: automatic windows arrangement <<
 	}
 }
 // vds: >>
@@ -2176,7 +2199,7 @@ void MainFrame::SetWindowStyles()
 	DWORD	dwStyle		= GetWindowLong(GWL_STYLE);
 	DWORD	dwExStyle	= GetWindowLong(GWL_EXSTYLE);
 
-	dwStyle &= ~WS_MAXIMIZEBOX;
+	//dwStyle &= ~WS_MAXIMIZEBOX; // john-peterson: automatic windows arrangement
 	if (!stylesSettings.bCaption)	dwStyle &= ~WS_CAPTION;
 	if (!stylesSettings.bResizable)	dwStyle &= ~WS_THICKFRAME;
 
@@ -2246,6 +2269,8 @@ void MainFrame::DockWindow(DockPosition dockPosition)
 		default : return;
 	}
 
+// john-peterson: automatic windows arrangement: >>
+#if 0 
 	SetWindowPos(
 		NULL, 
 		nX, 
@@ -2253,6 +2278,8 @@ void MainFrame::DockWindow(DockPosition dockPosition)
 		0, 
 		0, 
 		SWP_NOSIZE|SWP_NOZORDER);
+#endif
+// john-peterson: automatic windows arrangement: <<
 }
 
 //////////////////////////////////////////////////////////////////////////////
