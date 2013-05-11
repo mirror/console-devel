@@ -2192,6 +2192,15 @@ bool ConsoleView::TranslateKeyDown(UINT uMsg, WPARAM wParam, LPARAM /*lParam*/)
 			return true;
 		}
 	}
+// john peterson: option to toggle menu >>
+#if 1
+	if (uMsg == WM_KEYDOWN && ::GetKeyState(VK_RMENU) & 0x80 == 0x80)
+	{
+		m_mainFrame.ToggleMenu();
+		return true;
+	} 
+#endif
+// john peterson: option to toggle menu <<
 
 	return false;
 }
