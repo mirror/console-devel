@@ -345,6 +345,7 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 	vector<wstring>	startupDirs;
 	vector<wstring>	startupCmds;
 	vector<wstring>	postedCmds; // vds: posted commands
+	vector<bool> reusePreviousTabs; // vds: sessions
 	int				nMultiStartSleep = 0;
 	wstring			strDbgCmdLine(L"");
 	WORD			iFlags = 0; // vds
@@ -361,6 +362,11 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 		strDbgCmdLine,
 		iFlags); // vds
 
+	// vds: sessions >>
+	while (reusePreviousTabs.size() < startupTabs.size())
+		reusePreviousTabs.push_back(static_cast<bool>(iFlags & CLF_REUSE_PREV_INSTANCE));
+	// vds: sessions <<
+
 	if (strConfigFile.length() == 0)
 	{
 		strConfigFile = wstring(L"console.xml"); // vds
@@ -374,6 +380,22 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 		//TODO: error handling
 		return -1;
 	}
+
+	// vds: sessions >>
+	SessionsSettings& sessionsSettings = g_settingsHandler->GetSessionsSettings();
+	if (sessionsSettings.bRestoreTabs) {
+		for (unsigned int j = 0; j < sessionsSettings.sessionDataVector.size(); ++j) {
+			shared_ptr<SessionData> sessionData = sessionsSettings.sessionDataVector[j];
+
+			startupTabs.insert(startupTabs.begin() + j, sessionData->strTabTitle);
+			startupDirs.insert(startupDirs.begin() + j, sessionData->strWorkingDir);
+			startupCmds.insert(startupCmds.begin() + j, L"");
+			postedCmds.insert(postedCmds.begin() + j, L"");
+			reusePreviousTabs.insert(reusePreviousTabs.begin() + j, false);
+		}
+	}
+	// vds: sessions <<
+
 	// vds: >>
 	if (g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bAllowMultipleInstances && !(iFlags & CLF_REUSE_PREV_INSTANCE))
 		bOneInstance = false;
@@ -384,7 +406,7 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 
 	// create main window
 	NoTaskbarParent noTaskbarParent;
-	MainFrame wndMain(strWindowTitle, startupTabs, startupDirs, startupCmds, postedCmds, nMultiStartSleep, bOneInstance, strDbgCmdLine); // vds:
+	MainFrame wndMain(strWindowTitle, startupTabs, startupDirs, startupCmds, postedCmds, reusePreviousTabs, nMultiStartSleep, bOneInstance, strDbgCmdLine); // vds:
 
 	if (!g_settingsHandler->GetAppearanceSettings().stylesSettings.bTaskbarButton && !bOneInstance) // vds:
 	{
@@ -398,14 +420,14 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 	}
 
 	// vds: >>
-	wstring rebuildCommandLine;
+	//wstring rebuildCommandLine;
 	if (!bOneInstance) {
 		wndMain.ShowWindow(nCmdShow);
 	}
 	else {
 		// Give 3 seconds to exchange the DDE messages.
 		wndMain.SetTimer(TIMER_TIMEOUT, 3000, NULL);
-		rebuildCommandLine = BuildCommandLine(
+		wstring rebuildCommandLine = BuildCommandLine(
 			strConfigFile, 
 			strWindowTitle, 
 			startupTabs, 

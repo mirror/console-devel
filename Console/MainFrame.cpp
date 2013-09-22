@@ -27,6 +27,7 @@ MainFrame::MainFrame
 	const vector<wstring>& startupDirs, 
 	const vector<wstring>& startupCmds, 
 	const vector<wstring>& postedCmds, 
+	const vector<bool>& reusePreviousTabs, // vds: sessions
 	int nMultiStartSleep, 
 	bool bOneInstance, // vds:
 	const wstring& strDbgCmdLine
@@ -36,6 +37,7 @@ MainFrame::MainFrame
 , m_startupDirs(startupDirs)
 , m_startupCmds(startupCmds)
 , m_postedCmds(postedCmds)
+, m_reusePreviousTabs(reusePreviousTabs) // vds: sessions
 , m_nMultiStartSleep(nMultiStartSleep)
 , m_bOneInstance(bOneInstance) // vds:
 , m_strDbgCmdLine(strDbgCmdLine)
@@ -191,22 +193,39 @@ LRESULT MainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
 			// find tab with corresponding name...
 			for (size_t i = 0; i < tabSettings.tabDataVector.size(); ++i)
 			{
-				wstring str = tabSettings.tabDataVector[i]->strTitle;
-				if (tabSettings.tabDataVector[i]->strTitle == m_startupTabs[tabIndex])
-				{
-					// found it, create
-					if (CreateNewConsole(
-							static_cast<DWORD>(i), 
-							m_startupDirs[tabIndex],
-							m_startupCmds[tabIndex],
-							m_postedCmds[tabIndex],
-							(i == 0) ? m_strDbgCmdLine : wstring(L"")))
-					{
-						bAtLeastOneStarted = true;
-					}
-					if (m_startupTabs.size() > 1) ::Sleep(m_nMultiStartSleep);
-					break;
+				shared_ptr<TabData> tabData = tabSettings.tabDataVector[i];
+
+				wstring str = tabData->strTitle;
+				if (tabData->strTitle != m_startupTabs[tabIndex])
+					continue;
+
+				// vds: sessions >>
+				bool bReuseTab = m_reusePreviousTabs[tabIndex];
+
+				ConsoleView *existingTab = NULL;
+				if (bReuseTab)
+					existingTab = LookupTab(tabData, m_startupDirs[tabIndex]);
+
+				if (existingTab) {
+					// vds: An existing suitable tab have been found:
+					DisplayTab(existingTab->m_hWnd, FALSE);
+					existingTab->SendTextToConsole(m_postedCmds[tabIndex].c_str()); // vds: post command
+					continue;
 				}
+				// vds: sessions <<
+				
+				// found it, create
+				if (CreateNewConsole(
+						static_cast<DWORD>(i), 
+						m_startupDirs[tabIndex],
+						m_startupCmds[tabIndex],
+						m_postedCmds[tabIndex],
+						(i == 0) ? m_strDbgCmdLine : wstring(L"")))
+				{
+					bAtLeastOneStarted = true;
+				}
+				if (m_startupTabs.size() > 1) ::Sleep(m_nMultiStartSleep);
+				break;
 			}
 		}
 
@@ -359,6 +378,44 @@ LRESULT MainFrame::OnClose(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, 
 
 		bSaveSettings = true;
 	}
+
+	// vds: sessions >>
+	SessionsSettings& sessionsSettings = g_settingsHandler->GetSessionsSettings();
+	sessionsSettings.sessionDataVector.clear();
+#if 0
+	for (ConsoleViewMap::iterator i = m_views.begin(); i != m_views.end(); ++i) {
+		shared_ptr<ConsoleView> view = i->second;
+
+		shared_ptr<TabData> tabData = view->GetTabData();
+
+		shared_ptr<SessionData> sessionData(new SessionData(L"", L""));
+		sessionData->strTabTitle = tabData->strTitle;
+		//sessionData->strWorkingDir = tabData->strInitialDir; // Should be the current working folder?
+		sessionData->strWorkingDir = view->GetWorkingDir();
+
+		sessionsSettings.sessionDataVector.push_back(sessionData);
+
+		bSaveSettings = true;
+	}
+#endif
+	for (size_t i = 0; i < GetTabCtrl().GetItemCount(); ++i) {
+		CTabViewTabItem *item = GetTabCtrl().GetItem(i);
+		ConsoleViewMap::iterator it = m_views.find(item->GetTabView());
+
+		shared_ptr<ConsoleView> view = it->second;
+
+		shared_ptr<TabData> tabData = view->GetTabData();
+
+		shared_ptr<SessionData> sessionData(new SessionData(L"", L""));
+		sessionData->strTabTitle = tabData->strTitle;
+		//sessionData->strWorkingDir = tabData->strInitialDir; // Should be the current working folder?
+		sessionData->strWorkingDir = view->GetWorkingDir();
+
+		sessionsSettings.sessionDataVector.push_back(sessionData);
+
+		bSaveSettings = true;
+	}
+	// vds: sessions <<
 
 	if (bSaveSettings) g_settingsHandler->SaveSettings();
 
@@ -937,18 +994,23 @@ void MainFrame::CreateNewTab(wchar_t *lpstrCmdLine)
 
 		TabSettings &tabSettings = g_settingsHandler->GetTabSettings();
 		if (!startupTabs.size() && tabSettings.tabDataVector.size()) {
+			// vds: If startupTabs is empty initialize it with the first tab title defined in the configuration.
 			startupTabs.push_back(tabSettings.tabDataVector[0]->strTitle);
 		}
 
 		// find tab with corresponding name...
 
-		// vds: Loop on the types of console:
 		for (size_t j = 0; j < startupTabs.size(); ++j) {
+			// vds: Loop on the tab to create:
 			wstring startupTab = startupTabs[j];
 
 			for (size_t i = 0; i < tabSettings.tabDataVector.size(); ++i) {
+				// vds: Loop on the types of console:
+
 				shared_ptr<TabData> tabData = tabSettings.tabDataVector[i];
-				wstring str = tabData->strTitle;
+
+				if (tabData->strTitle != startupTab)
+					continue;
 
 				wstring startupDir = _T("");
 				if (j < startupDirs.size())
@@ -964,8 +1026,6 @@ void MainFrame::CreateNewTab(wchar_t *lpstrCmdLine)
 				if (j < postedCmds.size())
 					postedCmd = postedCmds[j];
 
-				ConsoleView *existingTab = NULL;
-
 				bool bReuseTab = g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bReuseTab;
 
 				if (iFlags & CLF_REUSE_PREV_TAB)
@@ -974,6 +1034,7 @@ void MainFrame::CreateNewTab(wchar_t *lpstrCmdLine)
 				if (iFlags & CLF_FORCE_NEW_TAB)
 					bReuseTab = false;
 
+				ConsoleView *existingTab = NULL;
 				if (bReuseTab)
 					existingTab = LookupTab(tabData, startupDir);
 
@@ -1020,6 +1081,36 @@ void MainFrame::CreateNewTab(wchar_t *lpstrCmdLine)
 }
 // vds: >>
 //////////////////////////////////////////////////////////////////////////////
+
+// vds: sessions >>
+void MainFrame::RestoreTabs()
+{
+	SessionsSettings &sessionsSettings = g_settingsHandler->GetSessionsSettings();
+	if (!sessionsSettings.bRestoreTabs)
+		return;
+
+	TabSettings &tabSettings = g_settingsHandler->GetTabSettings();
+
+	for (unsigned int j = 0; j < sessionsSettings.sessionDataVector.size(); ++j) {
+		shared_ptr<SessionData> sessionData = sessionsSettings.sessionDataVector[j];
+
+		for (size_t i = 0; i < tabSettings.tabDataVector.size(); ++i) {
+			shared_ptr<TabData> tabData = tabSettings.tabDataVector[i];
+			wstring str = tabData->strTitle;
+
+			if (tabData->strTitle != sessionData->strTabTitle)
+				continue;
+
+			bool r = CreateNewConsole(
+				static_cast<DWORD>(i), // Tab index
+				sessionData->strWorkingDir, // Startup Dir
+				L"", // Startup Cmd
+				L"", // Posted Cmd // vds: posted command
+				L""); // Dbg CmdLine
+		}
+	}
+}
+// vds: sessions <<
 
 //////////////////////////////////////////////////////////////////////////////
 // vds: >>
@@ -1803,8 +1894,7 @@ LRESULT MainFrame::OnHelp(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, 
 
 
 //////////////////////////////////////////////////////////////////////////////
-/*
-
+#if 0
 shared_ptr<ConsoleView> MainFrame::GetActiveView()
 {
 	if (m_views.size() == 0) return shared_ptr<ConsoleView>();
@@ -1814,8 +1904,7 @@ shared_ptr<ConsoleView> MainFrame::GetActiveView()
 
 	return findIt->second;
 }
-
-*/
+#endif
 //////////////////////////////////////////////////////////////////////////////
 
 
@@ -1848,7 +1937,7 @@ void MainFrame::AdjustWindowRect(CRect& rect)
 
 //////////////////////////////////////////////////////////////////////////////
 
-/*
+#if 0
 void MainFrame::AdjustAndResizeConsoleView(CRect& rectView)
 {
 	// adjust the active view
@@ -1857,7 +1946,7 @@ void MainFrame::AdjustAndResizeConsoleView(CRect& rectView)
 
 //	GetClientRect(&rectView);
 
-/ *
+#if 0
 	if (m_bToolbarVisible)
 	{
 
@@ -1882,7 +1971,7 @@ void MainFrame::AdjustAndResizeConsoleView(CRect& rectView)
 	}
 
 	rectView.bottom	-= GetTabAreaHeight(); //+0
-* /
+#endif
 
 	// adjust the active view
 	if (!m_activeView) return;
@@ -1905,7 +1994,7 @@ void MainFrame::AdjustAndResizeConsoleView(CRect& rectView)
 		it->second->AdjustRectAndResize(rectView);
 	}
 }
-*/
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 

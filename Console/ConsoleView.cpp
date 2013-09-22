@@ -2194,10 +2194,15 @@ bool ConsoleView::TranslateKeyDown(UINT uMsg, WPARAM wParam, LPARAM /*lParam*/)
 	}
 // john peterson: option to toggle menu >>
 #if 1
-	if (uMsg == WM_KEYDOWN && ::GetKeyState(VK_RMENU) & 0x80 == 0x80)
+	if (uMsg == WM_SYSKEYDOWN)
 	{
-		m_mainFrame.ToggleMenu();
-		return true;
+		SHORT keyState = ::GetKeyState(VK_LMENU);
+		SHORT mask = 0x80;
+		SHORT value = keyState & mask;
+		if (value == mask) {
+			m_mainFrame.ToggleMenu();
+			return true;
+		}
 	} 
 #endif
 // john peterson: option to toggle menu <<

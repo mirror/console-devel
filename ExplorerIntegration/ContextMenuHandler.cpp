@@ -492,7 +492,7 @@ STDMETHODIMP CContextMenuHandler::InvokeCommand(CMINVOKECOMMANDINFO *pici)
 				// synchronization
 				syncAutoLock oLock(g_oSync);
 
-				if ((LOWORD(pici->lpVerb) - eMC_RunConsoleWithTab) < (int)g_vTabs.size())
+				if ((LOWORD(pici->lpVerb) - eMC_PostConsoleWithTab) < (int)g_vTabs.size())
 					sTabName = g_vTabs[LOWORD(pici->lpVerb) - eMC_PostConsoleWithTab]->sName;
 			}
 

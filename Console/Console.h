@@ -22,8 +22,8 @@ void ParseCommandLine(
 	wstring& strWindowTitle, 
 	vector<wstring>& startupTabs, 
 	vector<wstring>& startupDirs, 
-	vector<wstring>& startupCmds, // vds: posted commands
-	vector<wstring>& postedCmds, 
+	vector<wstring>& startupCmds,
+	vector<wstring>& postedCmds, // vds: posted commands
 	int& nMultiStartSleep, 
 	wstring& strDbgCmdLine,
 	WORD& iFlags

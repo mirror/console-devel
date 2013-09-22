@@ -43,6 +43,8 @@ class DlgSettingsBehavior
 			DDX_CHECK(IDC_POST_CONSOLE, m_nPostConsoleMenuItem)
 			DDX_CHECK(IDC_POST_CONSOLE_TAB, m_nPostConsoleTabMenuItem)
 			// vds: <<
+
+			DDX_CHECK(IDC_CHECK_USE_RESTORE_SESSIONS, m_nRestoreSessions) // vds: sessions
 		END_DDX_MAP()
 
 		BEGIN_MSG_MAP(DlgSettingsBehavior)
@@ -84,6 +86,8 @@ class DlgSettingsBehavior
 
 		BehaviorSettings	m_behaviorSettings;
 
+		SessionsSettings	m_sessionsSettings; // vds: sessions
+
 		int					m_nCopyNewlineChar;
 
 		int					m_nScrollPageType;
@@ -101,6 +105,7 @@ class DlgSettingsBehavior
 		int					m_nPostConsoleTabMenuItem;
 		// vds: <<
 
+		int					m_nRestoreSessions; // vds: sessions
 };
 
 //////////////////////////////////////////////////////////////////////////////

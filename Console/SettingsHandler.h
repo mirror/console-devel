@@ -17,7 +17,7 @@
 struct SettingsBase
 {
 	virtual bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot) = 0;
-	virtual bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot) = 0;
+	virtual bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot) = 0;
 
 	static void AddTextNode(CComPtr<IXMLDOMDocument>& pDoc, CComPtr<IXMLDOMElement>& pElement, const CComBSTR& bstrText);
 };
@@ -32,7 +32,7 @@ struct ConsoleSettings : public SettingsBase
 	ConsoleSettings();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	ConsoleSettings& operator=(const ConsoleSettings& other);
 
@@ -85,7 +85,7 @@ struct FontSettings : public SettingsBase
 	FontSettings();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	FontSettings& operator=(const FontSettings& other);
 
@@ -109,7 +109,7 @@ struct WindowSettings : public SettingsBase
 	WindowSettings();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	WindowSettings& operator=(const WindowSettings& other);
 
@@ -158,7 +158,7 @@ struct StylesSettings : public SettingsBase
 	StylesSettings();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	StylesSettings& operator=(const StylesSettings& other);
 
@@ -208,7 +208,7 @@ struct PositionSettings : public SettingsBase
 	PositionSettings();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	PositionSettings& operator=(const PositionSettings& other);
 
@@ -242,7 +242,7 @@ struct TransparencySettings : public SettingsBase
 	TransparencySettings();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	TransparencySettings& operator=(const TransparencySettings& other);
 
@@ -264,7 +264,7 @@ struct AppearanceSettings : public SettingsBase
 	AppearanceSettings();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	AppearanceSettings& operator=(const AppearanceSettings& other);
 
@@ -286,7 +286,7 @@ struct CopyPasteSettings : public SettingsBase
 	CopyPasteSettings();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	CopyPasteSettings& operator=(const CopyPasteSettings& other);
 
@@ -309,7 +309,7 @@ struct ScrollSettings : public SettingsBase
 	ScrollSettings();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	ScrollSettings& operator=(const ScrollSettings& other);
 
@@ -326,7 +326,7 @@ struct TabHighlightSettings : public SettingsBase
 	TabHighlightSettings();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	TabHighlightSettings& operator=(const TabHighlightSettings& other);
 
@@ -369,7 +369,7 @@ struct AnimateSettings : public SettingsBase
 	AnimateSettings();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	AnimateSettings& operator=(const AnimateSettings& other);
 
@@ -390,7 +390,7 @@ struct OneInstanceSettings : public SettingsBase
 	OneInstanceSettings();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	OneInstanceSettings& operator=(const OneInstanceSettings& other);
 
@@ -407,7 +407,7 @@ struct ShellSettings : public SettingsBase
 	ShellSettings();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	ShellSettings& operator=(const ShellSettings& other);
 
@@ -432,7 +432,7 @@ struct BehaviorSettings : public SettingsBase
 	BehaviorSettings ();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	BehaviorSettings& operator=(const BehaviorSettings& other);
 
@@ -454,7 +454,7 @@ struct HotKeys : public SettingsBase
 	HotKeys();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	HotKeys& operator=(const HotKeys& other);
 
@@ -544,7 +544,7 @@ struct MouseSettings : public SettingsBase
 	MouseSettings();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	MouseSettings& operator=(const MouseSettings& other);
 
@@ -681,7 +681,7 @@ struct TabSettings : public SettingsBase
 	TabSettings();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	void SetDefaults(const wstring& defaultShell, const wstring& defaultInitialDir);
 
@@ -704,7 +704,7 @@ struct InternationalizationSettings : public SettingsBase
 	InternationalizationSettings();
 
 	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
-	bool Save(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
 
 	InternationalizationSettings& operator=(const InternationalizationSettings& other);
 
@@ -715,8 +715,47 @@ struct InternationalizationSettings : public SettingsBase
 	wstring		strExplorerMenuPostItem;
 	wstring		strExplorerMenuPostWithItem;
 };
-
 // graynm: <<
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+// vds: sessions >>
+struct SessionData
+{
+	SessionData(const wstring& defaultTabTile, const wstring& defaultWorkingDir);
+
+	wstring strTabTitle;
+	wstring strWorkingDir;
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+typedef std::vector<shared_ptr<SessionData> >	SessionDataVector;
+
+struct SessionsSettings : public SettingsBase
+{
+	SessionsSettings();
+
+	bool Load(const CComPtr<IXMLDOMElement>& pSettingsRoot);
+	bool Save(CComPtr<IXMLDOMElement>& pSettingsRoot);
+
+	void SetDefaults(const wstring& defaultTabTitle, const wstring& defaultWorkingDir);
+
+	SessionDataVector sessionDataVector;
+
+	bool bRestoreTabs;
+
+private:
+	wstring strDefaultTabTitle;
+	wstring strDefaultWorkingDir;
+};
+// vds: sessions <<
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -762,6 +801,8 @@ class SettingsHandler
 
 		InternationalizationSettings& GetInternationalizationSettings() { return m_internationalizationSettings; } // graynm:
 
+		SessionsSettings& GetSessionsSettings() { return m_sessionsSettings; } // vds: sessions
+
 	private:
 
 		CComPtr<IXMLDOMDocument>	m_pSettingsDocument;
@@ -783,6 +824,8 @@ class SettingsHandler
 		TabSettings			m_tabSettings;
 
 		InternationalizationSettings	m_internationalizationSettings; // graynm:
+
+		SessionsSettings	m_sessionsSettings; // vds: sessions
 };
 
 //////////////////////////////////////////////////////////////////////////////

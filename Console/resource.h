@@ -21,6 +21,7 @@
 #define IDD_SETTINGS_TABS_2             214
 #define IDD_SETTINGS_MOUSE              215
 #define IDD_CREDENTIALS                 216
+#define IDD_SETTINGS_SESSIONS           217
 #define IDC_TAB_NAME                    1000
 #define IDC_APPLY                       1001
 #define IDC_TREE_SECTIONS               1002
@@ -235,12 +236,14 @@
 #define IDC_POST_CONSOLE                1178
 #define IDC_POST_CONSOLE2               1179
 #define IDC_POST_CONSOLE_TAB            1179
+#define IDC_CHECK_USE_RESTORE_SESSIONS2 1181
+#define IDC_CHECK_USE_RESTORE_SESSIONS  1181
 #define ID_NEW_TAB_1                    2000
 #define ID_SWITCH_TAB_1                 2100
 #define ID_NEXT_TAB                     2200
 #define ID_PREV_TAB                     2201
 #define IDC_DUMP_BUFFER                 3000
-#define ID_INTERRUPT                     3001
+#define ID_INTERRUPT                    3001
 #define IDS_ERR_CANT_START_SHELL        5000
 #define IDS_ERR_CANT_START_AS_USER      5001
 #define IDS_ERR_CANT_START_SHELL_AS_USER 5001
@@ -268,7 +271,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        217
 #define _APS_NEXT_COMMAND_VALUE         32794
-#define _APS_NEXT_CONTROL_VALUE         1178
+#define _APS_NEXT_CONTROL_VALUE         1179
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

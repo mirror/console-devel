@@ -33,6 +33,8 @@ LRESULT DlgSettingsBehavior::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPAR
 {
 	m_behaviorSettings.Load(m_pOptionsRoot);
 
+	m_sessionsSettings.Load(m_pOptionsRoot);
+
 	m_nCopyNewlineChar	= static_cast<int>(m_behaviorSettings.copyPasteSettings.copyNewlineChar);
 	m_nScrollPageType	= m_behaviorSettings.scrollSettings.dwPageScrollRows ? 1 : 0;
 	m_bFlashInactiveTab	= (m_behaviorSettings.tabHighlightSettings.dwFlashes > 0);
@@ -47,6 +49,8 @@ LRESULT DlgSettingsBehavior::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPAR
 	m_nPostConsoleMenuItem = m_behaviorSettings.shellSettings.bPostConsoleMenItem ? 1 : 0;
 	m_nPostConsoleTabMenuItem = m_behaviorSettings.shellSettings.bPostConsoleTabMenuItem ? 1 : 0;
 	// vds: <<
+
+	m_nRestoreSessions = m_sessionsSettings.bRestoreTabs ? 1 : 0; // vds: sessions
 
 	CUpDownCtrl	spin;
 	UDACCEL		udAccel;
@@ -116,10 +120,19 @@ LRESULT DlgSettingsBehavior::OnCloseCmd(WORD /*wNotifyCode*/, WORD wID, HWND /*h
 		m_behaviorSettings.shellSettings.bPostConsoleTabMenuItem = (m_nPostConsoleTabMenuItem > 0);
 		// vds: <<
 
+		m_sessionsSettings.bRestoreTabs = (m_nRestoreSessions > 0); // vds: sessions
+
 		BehaviorSettings& behaviorSettings = g_settingsHandler->GetBehaviorSettings();
 
 		behaviorSettings = m_behaviorSettings;
 		m_behaviorSettings.Save(m_pOptionsRoot);
+
+		m_sessionsSettings.bRestoreTabs = (m_nRestoreSessions > 0); // vds: sessions
+
+		SessionsSettings& sessionsSettings = g_settingsHandler->GetSessionsSettings();
+
+		sessionsSettings = m_sessionsSettings;
+		m_sessionsSettings.Save(m_pOptionsRoot);
 	}
 
 	return 0;
