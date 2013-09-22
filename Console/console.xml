@@ -1,14 +1,14 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <settings>
   <console change_refresh="10"
            refresh="100"
-           rows="25"
+           rows="50"
            columns="80"
-           buffer_rows="40"
-           buffer_columns="120"
+           buffer_rows="500"
+           buffer_columns="0"
            shell=""
            init_dir=""
-           start_hidden="0"
+           start_hidden="1"
            save_size="0">
     <colors>
       <color id="0"
@@ -81,27 +81,29 @@
     <font name="Courier New"
           size="10"
           bold="0"
-          italic="0">
+          italic="0"
+          smoothing="0">
       <color use="0"
-             r="128"
+             r="0"
              g="0"
-             b="128" />
+             b="0" />
     </font>
-    <window title="Debug console"
-            icon="F:\Smece\a.ico"
+    <window title="Console"
+            icon=""
             use_tab_icon="1"
             use_console_title="1"
             show_cmd="1"
             show_cmd_tabs="1"
-            use_tab_title="1"
-            trim_tab_titles="20" />
+            use_tab_title="0"
+            trim_tab_titles="10"
+            trim_tab_titles_right="4" />
     <controls show_menu="1"
-              show_toolbar="1"
+              show_toolbar="0"
               show_statusbar="1"
               show_tabs="1"
               hide_single_tab="1"
-              tabs_on_bottom="0"
               show_scrollbars="1"
+              tabs_on_bottom="0"
               flat_scrollbars="0" />
     <styles caption="1"
             resizable="1"
@@ -111,7 +113,7 @@
             tray_icon="1">
       <selection_color r="255"
                        g="255"
-                       b="255" />
+                       b="128" />
     </styles>
     <position x="-1"
               y="-1"
@@ -135,27 +137,25 @@
     <scroll page_scroll_rows="0" />
     <tab_highlight flashes="3"
                    stay_highligted="1" />
-    <animate type="0"
-             horz_direction="1"
-             vert_direction="0"
-             time="200" />
-    <one_instance allow_multiple_intances="1"
-                  reuse_tab="0"
+    <one_instance allow_multiple_intances="0"
+                  reuse_tab="1"
                   reuse_busy_tab="0" />
+    <shell_integration run_console_menu_item="1"
+                       run_console_tab_menu_item="0" />
   </behavior>
-  <hotkeys use_scroll_lock="0">
+  <hotkeys use_scroll_lock="1">
+    <hotkey ctrl="1"
+            shift="0"
+            alt="0"
+            extended="0"
+            code="83"
+            command="settings" />
     <hotkey ctrl="0"
             shift="0"
             alt="0"
             extended="0"
             code="112"
             command="help" />
-    <hotkey ctrl="0"
-            shift="0"
-            alt="0"
-            extended="0"
-            code="0"
-            command="settings" />
     <hotkey ctrl="0"
             shift="0"
             alt="1"
@@ -166,7 +166,7 @@
             shift="0"
             alt="0"
             extended="0"
-            code="112"
+            code="84"
             command="newtab1" />
     <hotkey ctrl="1"
             shift="0"
@@ -180,11 +180,11 @@
             extended="0"
             code="114"
             command="newtab3" />
-    <hotkey ctrl="1"
+    <hotkey ctrl="0"
             shift="0"
             alt="0"
             extended="0"
-            code="115"
+            code="0"
             command="newtab4" />
     <hotkey ctrl="1"
             shift="0"
@@ -298,7 +298,7 @@
             shift="0"
             alt="0"
             extended="0"
-            code="87"
+            code="115"
             command="closetab" />
     <hotkey ctrl="1"
             shift="0"
@@ -309,8 +309,8 @@
     <hotkey ctrl="1"
             shift="0"
             alt="0"
-            extended="1"
-            code="45"
+            extended="0"
+            code="67"
             command="copy" />
     <hotkey ctrl="1"
             shift="0"
@@ -318,11 +318,11 @@
             extended="1"
             code="46"
             command="clear_selection" />
-    <hotkey ctrl="0"
-            shift="1"
+    <hotkey ctrl="1"
+            shift="0"
             alt="0"
-            extended="1"
-            code="45"
+            extended="0"
+            code="86"
             command="paste" />
     <hotkey ctrl="0"
             shift="0"
@@ -384,6 +384,12 @@
             extended="0"
             code="112"
             command="dumpbuffer" />
+    <hotkey ctrl="1"
+            shift="0"
+            alt="0"
+            extended="0"
+            code="73"
+            command="interupt" />
     <hotkey ctrl="0"
             shift="0"
             alt="0"
@@ -396,22 +402,22 @@
       <action ctrl="0"
               shift="0"
               alt="0"
-              button="0"
+              button="1"
               name="copy" />
       <action ctrl="0"
               shift="0"
               alt="0"
-              button="0"
+              button="1"
               name="select" />
       <action ctrl="0"
               shift="0"
               alt="0"
-              button="0"
+              button="3"
               name="paste" />
-      <action ctrl="0"
+      <action ctrl="1"
               shift="0"
               alt="0"
-              button="0"
+              button="1"
               name="drag" />
       <action ctrl="0"
               shift="0"
@@ -421,57 +427,16 @@
     </actions>
   </mouse>
   <tabs>
-    <tab title="Console2">
-      <console shell=""
-               init_dir="" />
+    <tab title="Console2"
+         use_default_icon="0">
+      <console shell="cmd /k set inconsole=1"
+               init_dir=""
+               run_as_user="0"
+               user="" />
       <cursor style="0"
               r="255"
               g="255"
-              b="255" />
-      <background type="2"
-                  r="0"
-                  g="0"
-                  b="0">
-        <image file=""
-               relative="0"
-               extend="0"
-               position="0">
-          <tint opacity="153"
-                r="0"
-                g="0"
-                b="0" />
-        </image>
-      </background>
-    </tab>
-    <tab title="cmd">
-      <console shell="cmd.exe"
-               init_dir="F:\" />
-      <cursor style="0"
-              r="255"
-              g="255"
-              b="255" />
-      <background type="1"
-                  r="0"
-                  g="0"
-                  b="0">
-        <image file="F:\Smece\back2.bmp"
-               relative="0"
-               extend="0"
-               position="1">
-          <tint opacity="70"
-                r="0"
-                g="255"
-                b="0" />
-        </image>
-      </background>
-    </tab>
-    <tab title="asd">
-      <console shell="cmd.exe"
-               init_dir="" />
-      <cursor style="0"
-              r="255"
-              g="255"
-              b="255" />
+              b="128" />
       <background type="0"
                   r="0"
                   g="0"
@@ -487,27 +452,6 @@
         </image>
       </background>
     </tab>
-    <tab title="Test tab bash">
-      <console shell="bash.exe"
-               init_dir="" />
-      <cursor style="1"
-              r="255"
-              g="255"
-              b="255" />
-      <background type="2"
-                  r="0"
-                  g="0"
-                  b="0">
-        <image file=""
-               relative="0"
-               extend="0"
-               position="0">
-          <tint opacity="165"
-                r="0"
-                g="0"
-                b="0" />
-        </image>
-      </background>
-    </tab>
   </tabs>
+  <internationalization current_language="english"></internationalization>
 </settings>

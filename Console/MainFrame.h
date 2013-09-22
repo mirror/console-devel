@@ -46,7 +46,8 @@ class MainFrame
 			const vector<wstring>& startupTabs, 
 			const vector<wstring>& startupDirs, 
 			const vector<wstring>& startupCmds, // vds: posted commands
-			const vector<wstring>& postedCmds, 
+			const vector<wstring>& postedCmds,
+			const vector<bool>& reusePreviousTabs, // vds: sessions
 			int nMultiStartSleep, 
 			bool bOneInstance, // vds:
 			const wstring& strDbgCmdLine
@@ -231,6 +232,8 @@ class MainFrame
 
 		bool SendDdeExecuteCommand(HWND hPrevConsole, LPTSTR lpstrCmdLine); // vds:
 
+		void RestoreTabs(); // vds: sessions
+
 	private:
 
 		bool CreateNewConsole(DWORD dwTabIndex, const wstring& strStartupDir = wstring(L""), const wstring& strStartupCmd = wstring(L""), const wstring& strPostedCmd = wstring(L""), const wstring& strDbgCmdLine = wstring(L""));
@@ -272,6 +275,8 @@ class MainFrame
 		const vector<wstring>&	m_startupDirs;
 		const vector<wstring>&	m_startupCmds;
 		const vector<wstring>&	m_postedCmds; // vds: posted commands
+		const vector<bool>& m_reusePreviousTabs; // vds:: sessions
+
 		int						m_nMultiStartSleep;
 		bool					m_bOneInstance; // vds:
 		wstring					m_strDbgCmdLine;

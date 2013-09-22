@@ -2,7 +2,7 @@
 #include "resource.h"
 
 #include "XmlHelper.h"
-//#include "SettingsHandler.h" // john-peterson: automatic windows arrangement
+#include "SettingsHandler.h" // john-peterson: automatic windows arrangement
 
 using namespace boost::algorithm;
 
@@ -122,7 +122,7 @@ bool ConsoleSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool ConsoleSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool ConsoleSettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	CComPtr<IXMLDOMElement>	pConsoleElement;
 
@@ -246,7 +246,7 @@ bool FontSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool FontSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool FontSettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	CComPtr<IXMLDOMElement>	pFontElement;
 
@@ -339,7 +339,7 @@ bool WindowSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool WindowSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool WindowSettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	CComPtr<IXMLDOMElement>	pWindowElement;
 
@@ -518,7 +518,7 @@ bool StylesSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool StylesSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool StylesSettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	CComPtr<IXMLDOMElement>	pStylesElement;
 
@@ -604,7 +604,7 @@ bool PositionSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool PositionSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool PositionSettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	CComPtr<IXMLDOMElement>	pPositionElement;
 
@@ -684,7 +684,7 @@ bool TransparencySettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool TransparencySettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool TransparencySettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	CComPtr<IXMLDOMElement>	pTransElement;
 
@@ -748,7 +748,7 @@ bool AppearanceSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool AppearanceSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool AppearanceSettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	fontSettings.Save(pSettingsRoot);
 	windowSettings.Save(pSettingsRoot);
@@ -825,7 +825,7 @@ bool CopyPasteSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool CopyPasteSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool CopyPasteSettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	CComPtr<IXMLDOMElement>	pCopyPasteElement;
 
@@ -894,7 +894,7 @@ bool ScrollSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool ScrollSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool ScrollSettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	CComPtr<IXMLDOMElement>	pScrollElement;
 
@@ -955,7 +955,7 @@ bool TabHighlightSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool TabHighlightSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool TabHighlightSettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	CComPtr<IXMLDOMElement>	pTabElement;
 
@@ -1022,7 +1022,7 @@ bool AnimateSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool AnimateSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool AnimateSettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	CComPtr<IXMLDOMElement>	pAnimateElement;
 
@@ -1101,7 +1101,7 @@ bool OneInstanceSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool OneInstanceSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool OneInstanceSettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	CComPtr<IXMLDOMElement>	pOneInstanceElement;
 
@@ -1180,7 +1180,7 @@ bool ShellSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool ShellSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool ShellSettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	CComPtr<IXMLDOMElement>	pShellElement;
 
@@ -1225,9 +1225,11 @@ bool ShellSettings::IsConsoleIntegratedWithExplorer()
 
 	if (!IsKeyPresent(_T("Directory\\shellex\\ContextMenuHandlers\\Console")))
 		return false;
-
+#if 0
 	if (!IsKeyPresent(_T("Directory\\Background\\shellex\\ContextMenuHandlers\\Console")))
 		return false;
+#endif
+
 #else
 	if (!IsKeyPresent(_T("*\\shell\\console")))
 		return false;
@@ -1294,7 +1296,7 @@ void ShellSettings::IntegrateConsoleWithExplorer(bool integrate)
 	if (integrate) {
 		SetKeyValue(_T("*\\shellex\\ContextMenuHandlers\\Console"), _T("{88076FF3-A8B5-4059-AB7D-9D7DEF3792FD}"));
 		SetKeyValue(_T("Directory\\shellex\\ContextMenuHandlers\\Console"), _T("{88076FF3-A8B5-4059-AB7D-9D7DEF3792FD}"));
-		SetKeyValue(_T("Directory\\Background\\shellex\\ContextMenuHandlers\\Console"), _T("{88076FF3-A8B5-4059-AB7D-9D7DEF3792FD}"));
+		//SetKeyValue(_T("Directory\\Background\\shellex\\ContextMenuHandlers\\Console"), _T("{88076FF3-A8B5-4059-AB7D-9D7DEF3792FD}"));
 		SetKeyValue(_T("Drive\\shellex\\ContextMenuHandlers\\Console"), _T("{88076FF3-A8B5-4059-AB7D-9D7DEF3792FD}"));
 
 		HMODULE hExplorerIntegration = LoadLibrary(_T("ExplorerIntegration.dll"));
@@ -1311,7 +1313,7 @@ void ShellSettings::IntegrateConsoleWithExplorer(bool integrate)
 		HRESULT result;
 		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("*\\shellex\\ContextMenuHandlers\\Console"));
 		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("Directory\\shellex\\ContextMenuHandlers\\Console"));
-		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("Directory\\Background\\shellex\\ContextMenuHandlers\\Console"));
+		//result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("Directory\\Background\\shellex\\ContextMenuHandlers\\Console"));
 		result = RegDeleteKey(HKEY_CLASSES_ROOT, _T("Drive\\shellex\\ContextMenuHandlers\\Console"));
 
 		HMODULE hExplorerIntegration = LoadLibrary(_T("ExplorerIntegration.dll"));
@@ -1410,7 +1412,7 @@ bool BehaviorSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool BehaviorSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool BehaviorSettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	copyPasteSettings.Save(pSettingsRoot);
 	scrollSettings.Save(pSettingsRoot);
@@ -1571,7 +1573,7 @@ bool HotKeys::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool HotKeys::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool HotKeys::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	HRESULT						hr = S_OK;
 	CComPtr<IXMLDOMElement>		pHotkeysElement;
@@ -1737,7 +1739,7 @@ bool MouseSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool MouseSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool MouseSettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	HRESULT						hr = S_OK;
 	CComPtr<IXMLDOMElement>		pMouseActionsElement;
@@ -1931,7 +1933,7 @@ bool TabSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool TabSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool TabSettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	HRESULT						hr = S_OK;
 	CComPtr<IXMLDOMElement>		pTabsElement;
@@ -2098,12 +2100,13 @@ void TabSettings::SetDefaults(const wstring& defaultShell, const wstring& defaul
 // graym: >>
 //////////////////////////////////////////////////////////////////////////////
 
-InternationalizationSettings::InternationalizationSettings():
-strExplorerMenuRunItem(L"&Run Console"),
-strExplorerMenuRunWithItem(L"&Run Console Tab"),
-strExplorerMenuPostItem(L"&Post Console"),
-strExplorerMenuPostWithItem(L"&Post Console Tab")
+InternationalizationSettings::InternationalizationSettings()
+: strExplorerMenuRunItem(L"&Run Console")
+, strExplorerMenuRunWithItem(L"&Run Console Tab")
+, strExplorerMenuPostItem(L"&Post Console")
+, strExplorerMenuPostWithItem(L"&Post Console Tab")
 {
+
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -2120,7 +2123,7 @@ bool InternationalizationSettings::Load(const CComPtr<IXMLDOMElement>& pSettings
 
 		if(FAILED(pSettingsDoc->createElement(CComBSTR(L"internationalization"), &pInternationalizationElement))) return false;
 
-		CComPtr<IXMLDOMNode>	pInternationalizationElementOut;
+		CComPtr<IXMLDOMNode> pInternationalizationElementOut;
 		pSettingsRoot->appendChild(pInternationalizationElement,&pInternationalizationElementOut);
 		SettingsBase::AddTextNode(pSettingsDoc, pInternationalizationElement, CComBSTR(L"\n\t"));
 		CComPtr<IXMLDOMElement>	pTRoot;
@@ -2148,7 +2151,7 @@ bool InternationalizationSettings::Load(const CComPtr<IXMLDOMElement>& pSettings
 	return true;
 }
 
-bool InternationalizationSettings::Save(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+bool InternationalizationSettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
 {
 	CComPtr<IXMLDOMElement>	pInternationalizationElement;
 
@@ -2158,7 +2161,7 @@ bool InternationalizationSettings::Save(const CComPtr<IXMLDOMElement>& pSettings
 
 	XmlHelper::SetAttribute(pInternationalizationElement, CComBSTR(L"current_language"), strSelectedLanguage);
 
-	// do not update strings - thay are used read only
+	// Do not update strings - thay are used read only.
 
 	return true;
 }
@@ -2178,6 +2181,146 @@ InternationalizationSettings& InternationalizationSettings::operator=(const Inte
 
 //////////////////////////////////////////////////////////////////////////////
 // graym: <<
+
+
+// vds: sessions >>
+//////////////////////////////////////////////////////////////////////////////
+
+SessionData::SessionData(const wstring& defaultTabTitle, const wstring& defaultWorkingDir)
+: strTabTitle(defaultTabTitle)
+, strWorkingDir(defaultWorkingDir)
+{
+
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+SessionsSettings::SessionsSettings()
+: bRestoreTabs(false)
+{
+
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void SessionsSettings::SetDefaults(const wstring& defaultTabTitle, const wstring& defaultWorkingDir)
+{
+	strDefaultTabTitle = defaultTabTitle;
+	strDefaultWorkingDir = defaultWorkingDir;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+bool SessionsSettings::Load(const CComPtr<IXMLDOMElement>& pSettingsRoot)
+{
+	HRESULT hr = S_OK;
+
+	CComPtr<IXMLDOMElement> pSessionsElement;
+	if (FAILED(XmlHelper::GetDomElement(pSettingsRoot, CComBSTR(L"sessions"), pSessionsElement))) return false;
+
+	XmlHelper::GetAttribute(pSessionsElement, CComBSTR(L"restore_tabs"), bRestoreTabs, false);
+
+	CComPtr<IXMLDOMNodeList> pSessionNodes;
+	hr = pSettingsRoot->selectNodes(CComBSTR(L"sessions/session"), &pSessionNodes);
+	if (FAILED(hr)) return false;
+
+	long lListLength;
+	pSessionNodes->get_length(&lListLength);
+
+	for (long i = 0; i < lListLength; ++i)
+	{
+		CComPtr<IXMLDOMNode> pSessionNode;
+		CComPtr<IXMLDOMElement> pSessionElement;
+
+		pSessionNodes->get_item(i, &pSessionNode);
+		if (FAILED(pSessionNode.QueryInterface(&pSessionElement))) continue;
+
+		shared_ptr<SessionData> sessionData(new SessionData(strDefaultTabTitle, strDefaultWorkingDir));
+
+		XmlHelper::GetAttribute(pSessionElement, CComBSTR(L"tab_title"), sessionData->strTabTitle, strDefaultTabTitle);
+		XmlHelper::GetAttribute(pSessionElement, CComBSTR(L"working_dir"), sessionData->strWorkingDir, strDefaultWorkingDir);
+
+		sessionDataVector.push_back(sessionData);
+	}
+
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+bool SessionsSettings::Save(CComPtr<IXMLDOMElement>& pSettingsRoot)
+{
+	HRESULT hr = S_OK;
+	CComPtr<IXMLDOMElement> pSessionsElement;
+	CComPtr<IXMLDOMNodeList> pSessionChildNodes;
+
+	if (FAILED(XmlHelper::GetDomElement(pSettingsRoot, CComBSTR(L"sessions"), pSessionsElement))) {
+		// If the sessions node don't exist try to create it.
+
+		CComPtr<IXMLDOMDocument> pSettingsDoc;
+		pSettingsRoot->get_ownerDocument(&pSettingsDoc);
+
+		if (FAILED(pSettingsDoc->createElement(CComBSTR(L"sessions"), &pSessionsElement)))
+			return false;
+
+		CComPtr<IXMLDOMNode> pSessionsOut;
+		pSettingsRoot->appendChild(pSessionsElement, &pSessionsOut);
+		SettingsBase::AddTextNode(pSettingsDoc, pSettingsRoot, CComBSTR(L"\n"));
+	}
+
+	XmlHelper::SetAttribute(pSessionsElement, CComBSTR(L"restore_tabs"), bRestoreTabs);
+
+#if 0
+	if (FAILED(XmlHelper::GetDomElement(pSettingsRoot, CComBSTR(L"sessions"), pSessionsElement)))
+		return false;
+#endif
+
+	if (FAILED(pSessionsElement->get_childNodes(&pSessionChildNodes))) return false;
+
+	long lListLength;
+	pSessionChildNodes->get_length(&lListLength);
+
+	// Remove all the session sub nodex
+	for (long i = lListLength - 1; i >= 0; --i)
+	{
+		CComPtr<IXMLDOMNode> pSessionChildNode;
+		CComPtr<IXMLDOMNode> pRemovedSessionNode;
+		if (FAILED(pSessionChildNodes->get_item(i, &pSessionChildNode))) continue;
+
+		hr = pSessionsElement->removeChild(pSessionChildNode, &pRemovedSessionNode);
+	}
+
+	CComPtr<IXMLDOMDocument> pSettingsDoc;
+	SessionDataVector::iterator itSession;
+	SessionDataVector::iterator itLastSession = sessionDataVector.end();
+
+	pSessionsElement->get_ownerDocument(&pSettingsDoc);
+
+	for (itSession = sessionDataVector.begin(); itSession != sessionDataVector.end(); ++itSession)
+	{
+		CComPtr<IXMLDOMElement> pNewSessionElement;
+		CComPtr<IXMLDOMNode> pNewSessionOut;
+
+		pSettingsDoc->createElement(CComBSTR(L"session"), &pNewSessionElement);
+
+		XmlHelper::SetAttribute(pNewSessionElement, CComBSTR(L"tab_title"), (*itSession)->strTabTitle);
+		XmlHelper::SetAttribute(pNewSessionElement, CComBSTR(L"working_dir"), (*itSession)->strWorkingDir);
+
+		SettingsBase::AddTextNode(pSettingsDoc, pSessionsElement, CComBSTR(L"\n\t\t"));
+		pSessionsElement->appendChild(pNewSessionElement, &pNewSessionOut);
+
+		// This is just for pretty printing
+		if (itSession + 1 == itLastSession)
+		{
+			SettingsBase::AddTextNode(pSettingsDoc, pSessionsElement, CComBSTR(L"\n\t"));
+		}
+	}
+
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// vds: sessions <<
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -2302,6 +2445,7 @@ bool SettingsHandler::LoadSettings(const wstring& strSettingsFileName)
 	m_tabSettings.Load(m_pSettingsRoot);
 
 	m_internationalizationSettings.Load(m_pSettingsRoot); // graym:
+	m_sessionsSettings.Load(m_pSettingsRoot); // vds: session
 
 	return true;
 }
@@ -2321,6 +2465,8 @@ bool SettingsHandler::SaveSettings()
 	m_tabSettings.Save(m_pSettingsRoot);
 
 	m_internationalizationSettings.Save(m_pSettingsRoot); // graym:
+
+	m_sessionsSettings.Save(m_pSettingsRoot); // vds: sessions
 
 	HRESULT hr = m_pSettingsDocument->save(CComVariant(GetSettingsFileName().c_str()));
 
