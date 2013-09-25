@@ -1,0 +1,33 @@
+m Update the documentation
+
+m Update the change log (devel_changes.txt)
+
+m Build Win32 Release version
+m Build x64 Release version
+
+m Adapt setup\console.iss to the new version number
+m - OutputBaseFilename
+m - AppVersion
+
+m Adapt setup\console-x64.iss to the new version number
+m - OutputBaseFilename
+m - AppVersion
+
+v commit the changes
+v prepare a tag
+v push the changes
+
+v Build the x64 installer
+v Build the win32 installer
+
+v Build the x64 archive version
+v Build the win32 archive version
+
+v Build the source version
+v - source.bat
+
+Create a new folder in sourceforge
+Upload all the five file to sourceforge
+Change the default setup
+
+Adapt the sourceforge wiki.

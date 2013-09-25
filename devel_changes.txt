@@ -1,7 +1,15 @@
 v2.00
 =====
 
+Build 148d (23/09/2013)
+=======================
+
+- Add restore sessions feature.
+
+- Integrate John Peterson changes to add Windows 7 windows management.
+
 - Integrate the changes of ClangOnWin to improve Chinese support.
+
 
 Build 148c (16/10/2012)
 =======================
