@@ -454,4 +454,5 @@
     </tab>
   </tabs>
   <internationalization current_language="english"></internationalization>
+  <sessions restore_tabs="0"></sessions>
 </settings>

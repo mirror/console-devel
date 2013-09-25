@@ -1,11 +1,11 @@
 [Setup]
 OutputDir=setup
 SourceDir=..\
-OutputBaseFilename=Console 2.00b148c win32
+OutputBaseFilename=Console 2.00b148d win32
 VersionInfoVersion=2.00
 MinVersion=0,5.0.2195sp3
 AppName=Console
-AppVersion=2.00b148c
+AppVersion=2.00b148d
 AppVerName=Console
 AppPublisher=Bozho & Kirill
 AppPublisherURL=https://sourceforge.net/projects/console-devel/

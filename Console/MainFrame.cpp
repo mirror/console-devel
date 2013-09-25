@@ -196,8 +196,12 @@ LRESULT MainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
 				shared_ptr<TabData> tabData = tabSettings.tabDataVector[i];
 
 				wstring str = tabData->strTitle;
-				if (tabData->strTitle != m_startupTabs[tabIndex])
+				
+				// vds: session >>
+				if (!(m_startupTabs[tabIndex] == wstring(L"") && i == 0) &&
+					tabData->strTitle != m_startupTabs[tabIndex])
 					continue;
+				// vds: session <<
 
 				// vds: sessions >>
 				bool bReuseTab = m_reusePreviousTabs[tabIndex];
@@ -1009,7 +1013,8 @@ void MainFrame::CreateNewTab(wchar_t *lpstrCmdLine)
 
 				shared_ptr<TabData> tabData = tabSettings.tabDataVector[i];
 
-				if (tabData->strTitle != startupTab)
+				if (!(startupTab == wstring(L"") && i == 0) &&
+					tabData->strTitle != startupTab)
 					continue;
 
 				wstring startupDir = _T("");
@@ -1044,7 +1049,9 @@ void MainFrame::CreateNewTab(wchar_t *lpstrCmdLine)
 					existingTab->SendTextToConsole(postedCmd.c_str()); // vds: post command
 					break;
 				}
-				else if (tabSettings.tabDataVector[i]->strTitle == startupTab) {
+				else if ((startupTab == wstring(L"") && i == 0) ||
+					tabSettings.tabDataVector[i]->strTitle == startupTab) {
+
 					// Found it, create
 					if (!CreateNewConsole(
 						static_cast<DWORD>(i), // Tab index

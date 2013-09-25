@@ -201,10 +201,19 @@ void ParseCommandLine
 		// vds: <<
 	}
 
-	// make sure that startupDirs and startupCmds are at least as big as startupTabs
+	// Make sure that startupDirs and startupCmds are at least as big as startupTabs
+#if 0
 	if (startupDirs.size() < startupTabs.size()) startupDirs.resize(startupTabs.size());
 	if (startupCmds.size() < startupTabs.size()) startupCmds.resize(startupTabs.size());
 	if (postedCmds.size() < startupTabs.size()) postedCmds.resize(startupTabs.size()); // vds: posted commands
+#else
+	int entries = max(startupTabs.size(), startupDirs.size());
+
+	while (startupTabs.size() < entries) startupTabs.push_back(L"");
+	while (startupDirs.size() < entries) startupDirs.push_back(L"");
+	while (startupCmds.size() < entries) startupCmds.push_back(L"");
+	while (postedCmds.size() < entries) postedCmds.push_back(L""); // vds: posted commands
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -362,11 +371,6 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 		strDbgCmdLine,
 		iFlags); // vds
 
-	// vds: sessions >>
-	while (reusePreviousTabs.size() < startupTabs.size())
-		reusePreviousTabs.push_back(static_cast<bool>(iFlags & CLF_REUSE_PREV_INSTANCE));
-	// vds: sessions <<
-
 	if (strConfigFile.length() == 0)
 	{
 		strConfigFile = wstring(L"console.xml"); // vds
@@ -381,21 +385,6 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 		return -1;
 	}
 
-	// vds: sessions >>
-	SessionsSettings& sessionsSettings = g_settingsHandler->GetSessionsSettings();
-	if (sessionsSettings.bRestoreTabs) {
-		for (unsigned int j = 0; j < sessionsSettings.sessionDataVector.size(); ++j) {
-			shared_ptr<SessionData> sessionData = sessionsSettings.sessionDataVector[j];
-
-			startupTabs.insert(startupTabs.begin() + j, sessionData->strTabTitle);
-			startupDirs.insert(startupDirs.begin() + j, sessionData->strWorkingDir);
-			startupCmds.insert(startupCmds.begin() + j, L"");
-			postedCmds.insert(postedCmds.begin() + j, L"");
-			reusePreviousTabs.insert(reusePreviousTabs.begin() + j, false);
-		}
-	}
-	// vds: sessions <<
-
 	// vds: >>
 	if (g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bAllowMultipleInstances && !(iFlags & CLF_REUSE_PREV_INSTANCE))
 		bOneInstance = false;
@@ -403,6 +392,30 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 	if (iFlags & CLF_FORCE_NEW_INSTANCE)
 		bOneInstance = false;
 	// vds: <<
+
+	// vds: sessions >>
+	bool reuseTab = g_settingsHandler->GetBehaviorSettings().oneInstanceSettings.bReuseTab;
+	while (reusePreviousTabs.size() < startupTabs.size()) {
+		reusePreviousTabs.push_back(reuseTab);
+	}
+	// vds: sessions <<
+
+	// vds: sessions >>
+	if (!bOneInstance) {
+		SessionsSettings& sessionsSettings = g_settingsHandler->GetSessionsSettings();
+		if (sessionsSettings.bRestoreTabs) {
+			for (unsigned int j = 0; j < sessionsSettings.sessionDataVector.size(); ++j) {
+				shared_ptr<SessionData> sessionData = sessionsSettings.sessionDataVector[j];
+
+				startupTabs.insert(startupTabs.begin() + j, sessionData->strTabTitle);
+				startupDirs.insert(startupDirs.begin() + j, sessionData->strWorkingDir);
+				startupCmds.insert(startupCmds.begin() + j, L"");
+				postedCmds.insert(postedCmds.begin() + j, L"");
+				reusePreviousTabs.insert(reusePreviousTabs.begin() + j, false);
+			}
+		}
+	}
+	// vds: sessions <<
 
 	// create main window
 	NoTaskbarParent noTaskbarParent;
@@ -420,14 +433,15 @@ int Run(LPTSTR lpstrCmdLine = NULL, int nCmdShow = SW_SHOWDEFAULT)
 	}
 
 	// vds: >>
-	//wstring rebuildCommandLine;
+	// vds: This variable has to be in the scope of the theLoop.Run() call otherwise the message is destroyed before it arrive to destination.
+	wstring rebuildCommandLine;
 	if (!bOneInstance) {
 		wndMain.ShowWindow(nCmdShow);
 	}
 	else {
 		// Give 3 seconds to exchange the DDE messages.
 		wndMain.SetTimer(TIMER_TIMEOUT, 3000, NULL);
-		wstring rebuildCommandLine = BuildCommandLine(
+		rebuildCommandLine = BuildCommandLine(
 			strConfigFile, 
 			strWindowTitle, 
 			startupTabs, 
