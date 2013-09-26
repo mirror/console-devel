@@ -80,6 +80,10 @@ def prepareArchiveReleases(version):
 
     archive(archive_path, archive_files)
 
+    files += [
+        r"ConsoleWow.exe",
+        r"ConsoleHook32.dll",
+    ]
     archive_path = r"setup\Console %s x64.zip" % version
     archive_files = [os.path.join(r"bin\x64\Release", x) for x in files]
 
