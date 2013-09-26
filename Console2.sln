@@ -10,6 +10,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		devel_changes.txt = devel_changes.txt
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ConsoleWow", "ConsoleWow\ConsoleWow.vcproj", "{8A25E8AF-CC4A-4145-B878-3D99271562D4}"
+EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ExplorerIntegration", "ExplorerIntegration\ExplorerIntegration.vcproj", "{E7D4E116-30AE-46D6-A95D-14A71C3D65FD}"
 EndProject
 Global
@@ -36,6 +38,10 @@ Global
 		{6EA5C354-A242-49F3-88D1-559EACA7FB8A}.Release|Win32.Build.0 = Release|Win32
 		{6EA5C354-A242-49F3-88D1-559EACA7FB8A}.Release|x64.ActiveCfg = Release|x64
 		{6EA5C354-A242-49F3-88D1-559EACA7FB8A}.Release|x64.Build.0 = Release|x64
+		{8A25E8AF-CC4A-4145-B878-3D99271562D4}.Debug|Win32.ActiveCfg = Debug|Win32
+		{8A25E8AF-CC4A-4145-B878-3D99271562D4}.Debug|x64.ActiveCfg = Debug|Win32
+		{8A25E8AF-CC4A-4145-B878-3D99271562D4}.Release|Win32.ActiveCfg = Release|Win32
+		{8A25E8AF-CC4A-4145-B878-3D99271562D4}.Release|x64.ActiveCfg = Release|Win32
 		{E7D4E116-30AE-46D6-A95D-14A71C3D65FD}.Debug|Win32.ActiveCfg = Debug|Win32
 		{E7D4E116-30AE-46D6-A95D-14A71C3D65FD}.Debug|x64.ActiveCfg = Debug|x64
 		{E7D4E116-30AE-46D6-A95D-14A71C3D65FD}.Debug|x64.Build.0 = Debug|x64

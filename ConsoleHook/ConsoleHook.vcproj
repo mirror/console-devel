@@ -97,6 +97,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="copy ..\bin\$(PlatformName)\$(ConfigurationName)\$(ProjectName).dll ..\bin\x64\$(ConfigurationName)\$(ProjectName)32.dll"
 			/>
 		</Configuration>
 		<Configuration
@@ -256,6 +257,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="copy ..\bin\$(PlatformName)\$(ConfigurationName)\$(ProjectName).dll ..\bin\x64\$(ConfigurationName)\$(ProjectName)32.dll"
 			/>
 		</Configuration>
 		<Configuration
