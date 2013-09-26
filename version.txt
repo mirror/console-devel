@@ -2,8 +2,7 @@ m Update the documentation
 
 m Update the change log (devel_changes.txt)
 
-m Build Win32 Release version
-m Build x64 Release version
+m Adapt version.py to the new version number
 
 m Adapt setup\console.iss to the new version number
 m - OutputBaseFilename
@@ -13,21 +12,23 @@ m Adapt setup\console-x64.iss to the new version number
 m - OutputBaseFilename
 m - AppVersion
 
-v commit the changes
-v prepare a tag
-v push the changes
+m commit the changes
+m prepare a tag
+m push the changes
 
-v Build the x64 installer
-v Build the win32 installer
+a Build Win32 Release version
+a Build x64 Release version
 
-v Build the x64 archive version
-v Build the win32 archive version
+a Build the x64 installer
+a Build the win32 installer
 
-v Build the source version
-v - source.bat
+a Build the x64 archive version
+a Build the win32 archive version
 
-Create a new folder in sourceforge
-Upload all the five file to sourceforge
-Change the default setup
+a Build the source version
 
-Adapt the sourceforge wiki.
+m Create a new folder in sourceforge
+m Upload all the five files to sourceforge
+m Change the default setup in sourceforge
+
+m Adapt the sourceforge wiki.
