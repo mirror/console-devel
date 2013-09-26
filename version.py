@@ -11,6 +11,14 @@ def buildExecutables(version):
     os.system(r'devenv %s /build "%s|%s"' % ("Console2.sln", "Release", "Win32"))
     os.system(r'devenv %s /build "%s|%s"' % ("Console2.sln", "Release", "x64"))
 
+    os.system(r'msbuild Console2.sln /p:Configuration=Release /p:Platform=Win32 /t:ConsoleWow')
+
+    os.system(r'msbuild Console2.sln /p:Configuration=Release /p:Platform=Win32 /t:ConsoleHook')
+    os.system(r'msbuild Console2.sln /p:Configuration=Release /p:Platform=x64 /t:ConsoleHook')
+
+    os.system(r'msbuild Console2.sln /p:Configuration=Release /p:Platform=Win32 /t:ExplorerIntegration')
+    os.system(r'msbuild Console2.sln /p:Configuration=Release /p:Platform=x64 /t:ExplorerIntegration')
+
 
 def archive(path, files):
     archive = zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED)

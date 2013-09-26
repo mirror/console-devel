@@ -24,8 +24,8 @@ ArchitecturesAllowed=x64
 Source: bin\x64\Release\Console.exe; DestDir: {app}; Components: main; Flags: 64bit
 Source: help\Console.chm; DestDir: {app}; Components: main
 Source: bin\x64\Release\ConsoleHook.dll; DestDir: {app}; Components: main; Flags: 64bit
-Source: bin\x64\Release\ConsoleWow.exe; DestDir: {app}; Components: main;
-Source: bin\x64\Release\ConsoleHook32.dll; DestDir: {app}; Components: main;
+Source: bin\x64\Release\ConsoleWow.exe; DestDir: {app}; Components: main; Flags: 64bit
+Source: bin\x64\Release\ConsoleHook32.dll; DestDir: {app}; Components: main;  Flags: 64bit
 Source: bin\x64\Release\ExplorerIntegration.dll; DestDir: {app}; Components: main; Flags: 64bit regserver uninsrestartdelete restartreplace
 Source: setup\dlls\x64\FreeImage.dll; DestDir: {app}; Components: main; Flags: 64bit
 Source: setup\dlls\x64\FreeImagePlus.dll; DestDir: {app}; Components: main; Flags: 64bit
