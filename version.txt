@@ -3,18 +3,15 @@ m Update the documentation
 m Update the change log (devel_changes.txt)
 
 m Adapt version.py to the new version number
+m Run build.bat or label.bat
 
-m Adapt setup\console.iss to the new version number
-m - OutputBaseFilename
-m - AppVersion
+a Adapt setup\console.iss to the new version number
+a - OutputBaseFilename
+a - AppVersion
 
-m Adapt setup\console-x64.iss to the new version number
-m - OutputBaseFilename
-m - AppVersion
-
-m commit the changes
-m prepare a tag
-m push the changes
+a Adapt setup\console-x64.iss to the new version number
+a - OutputBaseFilename
+a - AppVersion
 
 a Build Win32 Release version
 a Build x64 Release version
@@ -26,6 +23,10 @@ a Build the x64 archive version
 a Build the win32 archive version
 
 a Build the source version
+
+m commit the changes
+m prepare a tag
+m push the changes
 
 m Create a new folder in sourceforge
 m Upload all the five files to sourceforge
